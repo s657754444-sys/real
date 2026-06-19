@@ -1,1021 +1,1079 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>Orange Space OS v2</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <!-- Google Fonts: 참스런 레트로 폰트 및 고딕 -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@600;800&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Noto Sans KR', sans-serif;
-      user-select: none;
-    }
-    .retro-font {
-      font-family: 'Dosis', 'Noto Sans KR', sans-serif;
-    }
-    /* 스크롤바 커스텀 */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #fff4eb;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #ffaa66;
-      border-radius: 3px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #ff8833;
-    }
-    /* 창 드래그 및 애니메이션 효과 */
-    .window-shadow {
-      box-shadow: 6px 6px 0px 0px rgba(255, 136, 51, 0.3);
-    }
-    .active-window {
-      z-index: 50 !important;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Retro Orange Space V2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* 🍊 주황색 도트 픽셀 테마 컬러 디자인 가이드 시스템 */
+:root {
+  --bg-main: #fff5f0;
+  --win-bg: #ffffff;
+  --sidebar-bg: #f7f1ed;
+  --text-primary: #4a3e3d;
+  --text-muted: #a69491;
+  --point-orange-mid: #fc7030;
+  --point-orange-accent: #ff5500;
+  --point-orange-light: #fff0e8;
+  --border-light: rgba(252, 112, 48, 0.12);
+  --border-medium: rgba(252, 112, 48, 0.25);
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-sm: 4px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--text-primary);
+  background-color: var(--bg-main);
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+  position: relative;
+}
+
+/* ❄️ 실시간 눈 내리는 캔버스 구역 */
+#snow-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+#desktop {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  padding-bottom: 44px;
+  z-index: 2;
+}
+
+/* --- 바탕화면 이모지 아이콘 배치 구역 --- */
+#desktop-icons {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 10;
+}
+.dicon {
+  width: 75px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.dicon-box {
+  width: 54px;
+  height: 54px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid var(--point-orange-mid);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 3px 3px 0px rgba(252, 112, 48, 0.15);
+  font-size: 28px; /* 이모지 크기 알맞게 조정 */
+}
+.dicon-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--point-orange-mid);
+  text-align: center;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+/* --- OS 윈도우 프레임 워크 및 창 제어 색상 변경 --- */
+.window {
+  position: absolute;
+  display: none;
+  flex-direction: column;
+  background: var(--win-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 30px rgba(252, 112, 48, 0.08);
+  border: 2px solid var(--point-orange-mid);
+  z-index: 100;
+  overflow: hidden;
+  transition: transform 0.15s ease, width 0.2s ease, height 0.2s ease;
+}
+.window.open { display: flex; }
+.window.minimized {
+  transform: scale(0.05) translateY(500px);
+  opacity: 0;
+  pointer-events: none;
+}
+.win-header {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background: var(--point-orange-light);
+  border-bottom: 2px solid var(--border-light);
+  cursor: grab;
+  position: relative;
+}
+.win-header:active { cursor: grabbing; }
+
+/* 🍊 Mac 버튼 주황 계열 그라데이션 커스텀 */
+.mac-buttons { display: flex; gap: 6px; position: absolute; left: 16px; }
+.mac-btn { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(252, 112, 48, 0.2); cursor: pointer; }
+.mac-close { background: #ff7640; } /* 진한 주황 */
+.mac-min { background: #ffa87d; }   /* 연한 주황 */
+.mac-max { background: #ffd0b8; }   /* 스킨 살구 */
+
+.win-title-text { margin: 0 auto; font-size: 12px; font-weight: 700; color: var(--point-orange-mid); }
+
+/* --- 기존 정렬 방식 완벽 복구 레이아웃 --- */
+.finder-toolbar {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-light);
+  gap: 12px;
+}
+.nav-arrows { display: flex; gap: 8px; color: var(--text-muted); font-size: 13px; cursor: pointer; }
+.path-bar-container {
+  flex: 1;
+  height: 26px;
+  background: var(--point-orange-light);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 11px;
+  color: var(--text-primary);
+}
+.search-bar {
+  width: 140px;
+  height: 26px;
+  background: var(--point-orange-light);
+  border: none;
+  border-radius: 6px;
+  padding: 0 8px;
+  font-size: 11px;
+  outline: none;
+}
+.win-container { display: flex; flex: 1; height: calc(100% - 80px); }
+.sidebar { width: 160px; background: var(--sidebar-bg); padding: 12px 6px; display: flex; flex-direction: column; gap: 2px; border-right: 1px solid var(--border-light); }
+.sidebar-group-title { font-size: 10px; font-weight: 700; color: var(--text-muted); padding: 4px 8px; margin-top: 4px; }
+.sidebar-item { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; color: var(--text-primary); }
+.sidebar-item.active { background: var(--point-orange-mid); color: #ffffff; font-weight: 700; }
+.sidebar-sub-item { padding-left: 22px; font-size: 11px; opacity: 0.8; }
+.main-content { flex: 1; display: flex; flex-direction: column; background: #ffffff; }
+.content-top-menu { height: 32px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--border-light); background: #fafafa; }
+.content-body { flex: 1; padding: 16px; overflow-y: auto; }
+
+/* 기존 복구용 일반 그리드 시스템 */
+.grid-layout-original {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 16px;
+}
+
+/* 🖼️ 내 사진 기능 복구 전용: 1열에 정확히 3장씩 배치하는 Grid 시스템 */
+.grid-layout-photos-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.card-style-original {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  position: relative;
+  padding: 8px;
+  border-radius: var(--radius-md);
+}
+.card-style-original:hover { background: var(--point-orange-light); }
+.card-icon-wrap {
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+.card-icon-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.card-text-original {
+  font-size: 11px;
+  text-align: center;
+  word-break: break-all;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* --- 블로그형 상세 보기 양식 --- */
+.blog-view-frame { padding: 4px 8px; user-select: text; }
+.blog-header-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+.blog-title { font-size: 20px; font-weight: 700; color: var(--point-orange-mid); }
+.blog-heart-icon { font-size: 15px; color: var(--text-muted); cursor: pointer; }
+.blog-heart-icon.active { color: red; }
+.blog-date { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+.blog-divider { border: none; border-top: 1px dashed var(--point-orange-mid); opacity: 0.4; margin-bottom: 14px; }
+.blog-center-wrap { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; }
+.blog-deco-img { max-width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border-light); }
+.blog-main-content { font-size: 13px; line-height: 1.6; color: var(--text-primary); white-space: pre-wrap; margin-top: 8px; text-align: left; width: 100%; }
+
+/* --- 멀티 탭 메모장 프로토콜 --- */
+.notepad-tabs { display: flex; background: var(--point-orange-light); padding: 4px 8px 0; gap: 2px; border-bottom: 1px solid var(--border-light); }
+.notepad-tab { padding: 6px 14px; font-size: 11px; background: rgba(252, 112, 48, 0.1); border-radius: 6px 6px 0 0; cursor: pointer; color: var(--text-primary); }
+.notepad-tab.active { background: #ffffff; font-weight: 700; border: 1px solid var(--border-light); border-bottom: none; }
+.notepad-add-tab { padding: 6px 10px; font-size: 12px; cursor: pointer; color: var(--point-orange-mid); font-weight: bold; }
+.notepad-body-frame { flex: 1; display: flex; flex-direction: column; }
+.notepad-textarea { flex: 1; border: none; outline: none; padding: 14px; font-family: inherit; font-size: 12px; resize: none; line-height: 1.6; }
+.notepad-footer { height: 28px; background: var(--point-orange-light); border-top: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; font-size: 11px; color: var(--text-muted); }
+.notepad-actions { display: flex; gap: 12px; }
+.notepad-action-btn { cursor: pointer; font-weight: 500; }
+.notepad-action-btn:hover { color: var(--point-orange-accent); }
+
+/* --- 우측 사이드 대시 가젯 배치선 --- */
+#widget-area { position: absolute; top: 24px; right: 24px; width: 220px; display: flex; flex-direction: column; gap: 12px; z-index: 50; }
+.widget-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px); border-radius: var(--radius-lg); padding: 14px; border: 2px solid var(--point-orange-mid); box-shadow: 4px 4px 0px rgba(252, 112, 48, 0.1); }
+
+/* 디데이 가젯 */
+.dday-display-banner { background: var(--point-orange-mid); border-radius: var(--radius-md); padding: 14px; color: #ffffff; text-align: center; cursor: pointer; }
+.dday-counter-big { font-size: 26px; font-weight: 700; }
+.dday-sub-title { font-size: 11px; opacity: 0.9; margin-top: 2px; }
+
+/* 타이머 가젯 */
+.timer-tab-row { display: flex; background: var(--point-orange-light); border-radius: 6px; padding: 2px; margin-bottom: 10px; }
+.timer-tab-btn { flex: 1; background: transparent; border: none; padding: 4px; font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; border-radius: 4px; }
+.timer-tab-btn.active { background: var(--point-orange-mid); color: white; }
+.timer-time-text { font-size: 34px; font-weight: 700; text-align: center; color: var(--point-orange-mid); margin: 4px 0; }
+.timer-preset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 10px; }
+.timer-preset-btn { background: #ffffff; border: 1px solid var(--border-medium); padding: 3px 0; font-size: 10px; border-radius: 4px; cursor: pointer; color: var(--text-primary); text-align: center; }
+.timer-action-row { display: flex; gap: 6px; }
+.btn-timer-core { flex: 1; height: 26px; border: none; border-radius: var(--radius-sm); font-size: 11px; font-weight: 700; cursor: pointer; }
+.btn-timer-start { background: var(--point-orange-mid); color: white; }
+.btn-timer-reset { background: var(--point-orange-light); color: var(--text-primary); }
+
+/* 유튜브 플레이어 뮤직 가젯 */
+.music-title-row { font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; color: var(--point-orange-mid); }
+.music-yt-hidden { width: 1px; height: 1px; position: absolute; opacity: 0; pointer-events: none; }
+.music-album-wrap { width: 100%; aspect-ratio: 1.5; background: var(--point-orange-light); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 8px; border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.music-info-text { font-size: 11px; font-weight: 700; margin-bottom: 6px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.music-progress-container { margin-bottom: 8px; }
+.music-bar-bg { width: 100%; height: 4px; background: var(--point-orange-light); border-radius: 2px; position: relative; }
+.music-bar-fill { width: 0%; height: 100%; background: var(--point-orange-mid); border-radius: 2px; }
+.music-time-labels { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+.music-ctrl-buttons { display: flex; justify-content: center; align-items: center; gap: 16px; margin-bottom: 6px; }
+.music-btn-icon { font-size: 13px; color: var(--point-orange-mid); cursor: pointer; }
+.music-now-playing-tag { background: var(--point-orange-light); border-radius: 4px; padding: 4px; font-size: 10px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--point-orange-mid); font-weight: 500; }
+
+/* 🍊 할 일 목록 주황색 체크박스 스타일 완벽 복구 변경 */
+.todo-widget-body { display: flex; flex-direction: column; gap: 6px; }
+.todo-input-style { width: 100%; height: 26px; background: var(--point-orange-light); border: 1px solid var(--border-light); border-radius: 6px; padding: 0 8px; font-size: 11px; outline: none; }
+.todo-item-row { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+
+/* 주황색 체크박스 전용 가이드 매핑 */
+.todo-item-row input[type="checkbox"] {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--point-orange-mid);
+  border-radius: 3px;
+  background-color: #fff;
+  cursor: pointer;
+  position: relative;
+}
+.todo-item-row input[type="checkbox"]:checked {
+  background-color: var(--point-orange-mid);
+}
+.todo-item-row input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  top: -3px;
+  left: 1px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+/* 데이터 관리 에디터 폼 */
+.admin-field-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.admin-field-group label { font-size: 11px; font-weight: 700; color: var(--point-orange-mid); }
+.admin-box-input { width: 100%; height: 28px; border: 1px solid var(--border-medium); border-radius: 6px; padding: 0 8px; font-size: 11px; outline: none; }
+.admin-box-textarea { width: 100%; height: 65px; border: 1px solid var(--border-medium); border-radius: 6px; padding: 6px; font-size: 11px; resize: none; outline: none; font-family: inherit; }
+.admin-btn-row { display: flex; gap: 6px; margin-top: 12px; }
+.btn-field-save { flex: 1; height: 30px; background: var(--point-orange-mid); color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: bold; }
+.btn-field-del { background: var(--point-orange-light); color: var(--text-primary); border: none; border-radius: 6px; padding: 0 10px; font-size: 11px; cursor: pointer; }
+.admin-badge-btn { position: absolute; top: 2px; right: 2px; background: var(--point-orange-accent); color: white; border: none; font-size: 9px; padding: 1px 3px; border-radius: 3px; cursor: pointer; display: none; z-index: 10; }
+.card-style-original:hover .admin-badge-btn { display: block; }
+
+/* 시작 메뉴 윈도우 */
+#start-menu-window { position: fixed; left: 16px; bottom: 50px; width: 250px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: var(--radius-lg); border: 2px solid var(--point-orange-mid); box-shadow: 0 8px 24px rgba(0,0,0,0.08); display: none; flex-direction: column; padding: 12px; z-index: 2000; }
+.start-profile-area { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border-light); position: relative; }
+
+/* 👤 기본 요구사항 반영: 흰색 프로필 슬롯 설정 */
+.start-profile-img-slot { width: 36px; height: 36px; border-radius: 50%; background: #ffffff; border: 1px solid var(--border-medium); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.start-profile-info { display: flex; flex-direction: column; }
+.start-profile-name { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+.start-profile-msg { font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.start-gear-icon { position: absolute; right: 2px; top: 10px; font-size: 14px; color: var(--point-orange-mid); cursor: pointer; }
+.start-app-section-title { font-size: 10px; font-weight: 700; color: var(--text-muted); margin: 8px 0 4px; padding-left: 4px; }
+.start-app-item { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 6px; font-size: 11px; cursor: pointer; color: var(--text-primary); }
+.start-app-item:hover { background: var(--point-orange-light); }
+
+/* 하단 바 고정 시스템 */
+#taskbar { position: fixed; left: 0; right: 0; bottom: 0; height: 40px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(15px); border-top: 1px solid var(--border-light); display: flex; align-items: center; padding: 0 16px; z-index: 5000; }
+#start-btn { background: var(--point-orange-mid); color: #ffffff; border: none; padding: 4px 12px; font-size: 11px; font-weight: 700; border-radius: 6px; cursor: pointer; }
+#admin-status-bar-text { margin-left: 10px; font-size: 11px; color: var(--text-muted); font-weight: bold; }
+#system-clock { margin-left: auto; font-size: 11px; font-weight: 500; color: var(--text-primary); }
+</style>
 </head>
-<body class="w-screen h-screen overflow-hidden bg-[#fffaf5] relative flex flex-col">
+<body>
 
-  <!-- 눈 내리는 배경 Canvas -->
-  <canvas id="snowCanvas" class="absolute top-0 left-0 w-full h-full pointer-events-none z-10"></canvas>
+<!-- ❄️ 실시간 눈 내리는 이펙트 레이어 추가 -->
+<canvas id="snow-canvas"></canvas>
 
-  <!-- 메인 작업 공간 -->
-  <div class="flex-1 w-full relative p-4 flex gap-6 overflow-hidden z-20">
+<div id="desktop">
+
+  <!-- 바탕화면 이모지 대체 아이콘 팩트 및 휴지통 추가 -->
+  <div id="desktop-icons">
+    <div class="dicon" data-openwin="win-finder">
+      <div class="dicon-box">💻</div>
+      <div class="dicon-label">내 PC</div>
+    </div>
+    <div class="dicon" data-openwin="win-notepad">
+      <div class="dicon-box">📄</div>
+      <div class="dicon-label">내 문서</div>
+    </div>
+    <div class="dicon" data-openwin="win-trash">
+      <div class="dicon-box">🗑️</div>
+      <div class="dicon-label">휴지통</div>
+    </div>
+  </div>
+
+  <!-- 메인 파인더 Window -->
+  <div id="win-finder" class="window" style="width: 720px; height: 500px; left: 80px; top: 40px;">
+    <div class="win-header">
+      <div class="mac-buttons">
+        <button class="mac-btn mac-close" data-winid="win-finder"></button>
+        <button class="mac-btn mac-min" data-winid="win-finder"></button>
+        <button class="mac-btn mac-max" data-winid="win-finder"></button>
+      </div>
+      <div class="win-title-text" id="finder-tab-title">내 PC</div>
+    </div>
+    <div class="finder-toolbar">
+      <div class="nav-arrows">〈 〉</div>
+      <div class="path-bar-container" id="header-path-text">내 PC</div>
+      <input type="text" class="search-bar" id="finder-search-input" placeholder="검색어 입력...">
+    </div>
+    <div class="win-container">
+      <div class="sidebar">
+        <div class="sidebar-group-title">즐겨찾기</div>
+        <div class="sidebar-item active" data-cate="all">🏠 내 PC</div>
+        <div class="sidebar-item" data-cate="gb">💬 방명록</div>
+        <div class="sidebar-group-title">카테고리</div>
+        <div class="sidebar-item" data-cate="c">📂 로컬디스크 (C:)</div>
+        <div class="sidebar-item sidebar-sub-item" data-cate="c_sub_diary">· diary</div>
+        <div class="sidebar-item sidebar-sub-item" data-cate="c_sub_note">· note</div>
+        <div class="sidebar-item" data-cate="photos">📂 내 사진</div>
+        <div class="sidebar-item sidebar-sub-item" data-cate="p_sub_log">· log</div>
+        <div class="sidebar-item sidebar-sub-item" data-cate="p_sub_gift">· cm*gift</div>
+      </div>
+      <div class="main-content">
+        <div class="content-top-menu">
+          <span style="font-size: 11px; font-weight: 700;" id="content-items-count">항목 0개</span>
+          <span style="font-size: 11px; color: var(--point-orange-mid); cursor: pointer; display: none;" id="admin-add-post-btn">▼ [+ 새 글 등록]</span>
+        </div>
+        <div class="content-body" id="finder-main-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🗑️ 독립형 휴지통 Window 신규 생성 -->
+  <div id="win-trash" class="window" style="width: 420px; height: 320px; left: 140px; top: 120px;">
+    <div class="win-header">
+      <div class="mac-buttons">
+        <button class="mac-btn mac-close" data-winid="win-trash"></button>
+        <button class="mac-btn mac-min" data-winid="win-trash"></button>
+        <button class="mac-btn mac-max" data-winid="win-trash"></button>
+      </div>
+      <div class="win-title-text">휴지통</div>
+    </div>
+    <div class="finder-toolbar">
+      <div class="path-bar-container">휴지통 > 임시 보관소</div>
+    </div>
+    <div class="content-body" style="background: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--text-muted);">
+      <div style="font-size: 48px;">🗑️</div>
+      <div style="font-size: 12px; font-weight: bold;">휴지통이 비어 있습니다.</div>
+    </div>
+  </div>
+
+  <!-- 블로그형 포스트 상세보기 서브 Window -->
+  <div id="win-blog-detail" class="window" style="width: 580px; height: 460px; left: 160px; top: 70px;">
+    <div class="win-header">
+      <div class="mac-buttons">
+        <button class="mac-btn mac-close" data-winid="win-blog-detail"></button>
+        <button class="mac-btn mac-min" data-winid="win-blog-detail"></button>
+        <button class="mac-btn mac-max" data-winid="win-blog-detail"></button>
+      </div>
+      <div class="win-title-text">포스트 보기</div>
+    </div>
+    <div class="finder-toolbar">
+      <div class="path-bar-container" id="blog-detail-path-text">내 PC > 상세 보기</div>
+    </div>
+    <div class="content-body" style="background: #ffffff;">
+      <div class="blog-view-frame" id="blog-detail-content-target"></div>
+    </div>
+  </div>
+
+  <!-- 멀티 탭 문서 메모장 Window -->
+  <div id="win-notepad" class="window" style="width: 460px; height: 420px; left: 220px; top: 100px;">
+    <div class="win-header">
+      <div class="mac-buttons">
+        <button class="mac-btn mac-close" data-winid="win-notepad"></button>
+        <button class="mac-btn mac-min" data-winid="win-notepad"></button>
+        <button class="mac-btn mac-max" data-winid="win-notepad"></button>
+      </div>
+      <div class="win-title-text">내 문서 - 메모장</div>
+    </div>
+    <div class="notepad-tabs" id="notepad-tabs-bar">
+      <div class="notepad-tab active" data-tabidx="0">메모1</div>
+      <div class="notepad-add-tab" id="btn-notepad-add-tab">+</div>
+    </div>
+    <div class="notepad-body-frame">
+      <textarea class="notepad-textarea" id="notepad-textarea-core" placeholder="자유롭게 메모를 적어보세요 ♥"></textarea>
+      <div class="notepad-footer">
+        <span id="notepad-char-counter">0자</span>
+        <div class="notepad-actions">
+          <span class="notepad-action-btn" id="btn-notepad-clear-current">이 메모 비우기</span>
+          <span class="notepad-action-btn" id="btn-notepad-clear-all" style="color: red;">공백 모두 지우기</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- [관리자전용] 글 편집/코드 추출 모달 Window -->
+  <div id="win-admin-editor" class="window" style="width: 380px; height: 450px; left: 260px; top: 60px;">
+    <div class="win-header">
+      <div class="mac-buttons">
+        <button class="mac-btn mac-close" data-winid="win-admin-editor"></button>
+      </div>
+      <div class="win-title-text">데이터베이스 관리자 센터</div>
+    </div>
+    <div class="content-body" style="overflow-y:auto;">
+      <input type="hidden" id="form-edit-id">
+      <div class="admin-field-group">
+        <label>저장 대상 카테고리</label>
+        <select class="admin-box-input" id="form-item-category">
+          <option value="c_sub_diary">diary</option>
+          <option value="c_sub_note">note</option>
+          <option value="p_sub_log">log</option>
+          <option value="p_sub_gift">cm*gift</option>
+        </select>
+      </div>
+      <div class="admin-field-group">
+        <label>글 제목</label>
+        <input type="text" class="admin-box-input" id="form-item-title">
+      </div>
+      <div class="admin-field-group">
+        <label>이미지 URL 주소</label>
+        <input type="text" class="admin-box-input" id="form-item-src" placeholder="https://...">
+      </div>
+      <div class="admin-field-group">
+        <label>본문 내용</label>
+        <textarea class="admin-box-textarea" id="form-item-text"></textarea>
+      </div>
+      <div class="admin-btn-row">
+        <button class="btn-field-del" id="btn-admin-delete-action">삭제</button>
+        <button class="btn-field-save" id="btn-admin-submit-action">실시간 적용</button>
+      </div>
+      <div class="admin-field-group" style="margin-top:14px;">
+        <label>💡 코드 영구 박제용 현재 백업 텍스트</label>
+        <textarea class="admin-box-textarea" id="admin-db-dump-output" style="height:55px; font-size:9px;" readonly onclick="this.select();"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 범용 디데이 타겟 편집 전용 Window (일반 유저 모드 개조 완료) -->
+  <div id="win-admin-dday" class="window" style="width: 300px; height: 200px; left: 300px; top: 130px;">
+    <div class="win-header">
+      <div class="mac-buttons">
+        <button class="mac-btn mac-close" data-winid="win-admin-dday"></button>
+      </div>
+      <div class="win-title-text">디데이 설정 변경</div>
+    </div>
+    <div class="content-body">
+      <div class="admin-field-group">
+        <label>이벤트 이름</label>
+        <input type="text" class="admin-box-input" id="form-dday-title">
+      </div>
+      <div class="admin-field-group">
+        <label>목표 날짜 선택</label>
+        <input type="date" class="admin-box-input" id="form-dday-date">
+      </div>
+      <button class="btn-field-save" style="width:100%; margin-top:8px;" id="btn-admin-dday-save">디데이 수정 반영</button>
+    </div>
+  </div>
+
+  <!-- 우측 고정 배치 레이아웃 대시 위젯 라인 -->
+  <div id="widget-area">
+    <div class="widget-card" style="padding: 0; overflow: hidden;">
+      <div class="dday-display-banner" id="wd-dday-trigger-box">
+        <div class="dday-counter-big" id="wd-dday-days">D-0</div>
+        <div class="dday-sub-title" id="wd-dday-title">설정된 디데이가 없습니다</div>
+      </div>
+    </div>
+
+    <div class="widget-card">
+      <div class="timer-tab-row">
+        <button class="timer-tab-btn active" data-timermode="normal">타이머</button>
+        <button class="timer-tab-btn" data-timermode="pomo">뽀모도로</button>
+      </div>
+      <div class="timer-time-text" id="wd-timer-display">25:00</div>
+      <div class="timer-preset-grid">
+        <button class="timer-preset-btn" data-min="5">5분</button>
+        <button class="timer-preset-btn" data-min="10">10분</button>
+        <button class="timer-preset-btn" data-min="15">15분</button>
+        <button class="timer-preset-btn" data-min="25">25분</button>
+        <button class="timer-preset-btn" data-min="30">30분</button>
+        <button class="timer-preset-btn" data-min="45">45분</button>
+        <button class="timer-preset-btn" data-min="60">60분</button>
+      </div>
+      <div class="timer-action-row">
+        <button class="btn-timer-core btn-timer-start" id="wctrl-start">시작</button>
+        <button class="btn-timer-core btn-timer-reset" id="wctrl-reset">초기화</button>
+      </div>
+    </div>
+
+    <div class="widget-card">
+      <div class="music-title-row">
+        <span>♪ 뮤직 플레이어</span>
+        <span style="font-size:10px; opacity:0.6;">Youtube 연동</span>
+      </div>
+      <div id="yt-audio-player-engine" class="music-yt-hidden"></div>
+      <div class="music-album-wrap"><span id="music-default-art-logo">🎵</span></div>
+      <div class="music-info-text" id="music-track-title">재생 중인 곡이 없습니다</div>
+      <div class="music-progress-container">
+        <div class="music-bar-bg"><div class="music-bar-fill" id="music-progress-bar-fill"></div></div>
+        <div class="music-time-labels">
+          <span id="music-current-time-txt">0:00</span>
+          <span id="music-total-time-txt">0:00</span>
+        </div>
+      </div>
+      <div class="music-ctrl-buttons">
+        <span class="music-btn-icon" id="mctrl-prev">◀◀</span>
+        <span class="music-btn-icon" id="mctrl-play" style="font-size: 16px;">▶</span>
+        <span class="music-btn-icon" id="mctrl-next">▶▶</span>
+      </div>
+      <input type="text" class="todo-input-style" id="music-yt-url-input" style="margin-top:6px; font-size:10px;" placeholder="유튜브 영상 링크 주소 입력 후 Enter">
+    </div>
+
+    <div class="widget-card">
+      <div class="todo-widget-body">
+        <input type="text" class="todo-input-style" id="wd-todo-input-field" placeholder="할 일 입력 후 Enter">
+        <div id="wd-todo-items-list" style="display: flex; flex-direction: column; gap: 5px; margin-top: 4px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 시작 메뉴 -->
+  <div id="start-menu-window">
+    <div class="start-profile-area">
+      <!-- 👤 변경사항: 흰색 깔끔 배경 프로필 지정 -->
+      <div class="start-profile-img-slot"></div>
+      <div class="start-profile-info">
+        <!-- 👤 기본값 이름: 비초 / 메시지: V2 매핑 -->
+        <div class="start-profile-name" id="start-profile-name-text">비초</div>
+        <div class="start-profile-msg" id="start-profile-msg-text">V2</div>
+      </div>
+      <div class="start-gear-icon" id="admin-login-indicator">⚙️</div>
+    </div>
+    <div class="start-app-section-title">앱</div>
+    <div class="start-app-item" data-openwin="win-notepad">📄 내 문서</div>
+    <div class="start-app-item" data-openwin="win-finder">💻 내 사진 및 PC</div>
+    <div class="start-app-item" data-openwin="win-trash">🗑️ 휴지통</div>
+  </div>
+
+  <!-- 하단 바 고정 인프라 -->
+  <div id="taskbar">
+    <button id="start-btn">시작</button>
+    <span id="admin-status-bar-text">[일반 유저 모드]</span>
+    <span id="system-clock">00:00 PM</span>
+  </div>
+
+</div>
+
+<!-- 자바스크립트 비즈니스 통합 제어 아키텍처 -->
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+(function(){
+  'use strict';
+
+  var ADMIN_PASSWORD = "1234";
+
+  /* =================================================================
+     📦 [다른 PC 전역 동기화용 고정 마스터 서버 데이터베이스]
+     ================================================================= */
+  var STATIC_SERVER_DB = [];
+
+  // 기본 프로필 세팅 요구치 반영 (비초 / V2)
+  var DEFAULT_BLANK_DB = {
+    c_sub_diary: [], c_sub_note: [], p_sub_log: [], p_sub_gift: [],
+    dday: { title: 'D-Day를 설정해보세요', date: '' },
+    profile: { name: '비초', msg: 'V2' }
+  };
+
+  var appState = {
+    isAdmin: false, currentCategory: 'all', searchQuery: '',
+    fileDB: {}, todoList: [], notepadMemos: [""], activeTabIdx: 0,
+    ytPlayer: null, musicProgressTimer: null, currentTrackTitle: '재생 중인 곡이 없습니다'
+  };
+
+  var activeZIndex = 500;
+  function query(s){ return document.querySelector(s); }
+  function setStorage(k, d){ try{localStorage.setItem('orange_os_'+k, JSON.stringify(d));}catch(e){} }
+  function getStorage(k){ try{var r=localStorage.getItem('orange_os_'+k); return r?JSON.parse(r):null;}catch(e){return null;} }
+
+  /* ---------- ❄️ 실시간 눈 내리는 애니메이션 엔진 효과 ---------- */
+  function initSnowEffect() {
+    var canvas = query('#snow-canvas');
+    if(!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var flakes = [];
     
-    <!-- 바탕화면 아이콘 그리드 -->
-    <div class="flex flex-col gap-5 w-24 items-center select-none">
-      <!-- 내 PC -->
-      <div onclick="openWindow('win-pc')" class="flex flex-col items-center justify-center p-2 rounded-xl cursor-pointer hover:bg-orange-100/70 transition w-20 group">
-        <span class="text-4xl filter drop-shadow-sm group-hover:scale-105 transition-transform">💻</span>
-        <span class="text-xs font-bold text-orange-950 mt-1 text-center bg-white/80 px-1.5 py-0.5 rounded shadow-sm">내 PC</span>
-      </div>
-      <!-- 내 문서 -->
-      <div onclick="openWindow('win-docs')" class="flex flex-col items-center justify-center p-2 rounded-xl cursor-pointer hover:bg-orange-100/70 transition w-20 group">
-        <span class="text-4xl filter drop-shadow-sm group-hover:scale-105 transition-transform">📄</span>
-        <span class="text-xs font-bold text-orange-950 mt-1 text-center bg-white/80 px-1.5 py-0.5 rounded shadow-sm">내 문서</span>
-      </div>
-      <!-- 내 사진 -->
-      <div onclick="openWindow('win-photos')" class="flex flex-col items-center justify-center p-2 rounded-xl cursor-pointer hover:bg-orange-100/70 transition w-20 group">
-        <span class="text-4xl filter drop-shadow-sm group-hover:scale-105 transition-transform">🖼️</span>
-        <span class="text-xs font-bold text-orange-950 mt-1 text-center bg-white/80 px-1.5 py-0.5 rounded shadow-sm">내 사진</span>
-      </div>
-      <!-- 휴지통 -->
-      <div onclick="openWindow('win-trash')" class="flex flex-col items-center justify-center p-2 rounded-xl cursor-pointer hover:bg-orange-100/70 transition w-20 group relative">
-        <span id="trashIconImg" class="text-4xl filter drop-shadow-sm group-hover:scale-105 transition-transform">🗑️</span>
-        <span class="text-xs font-bold text-orange-950 mt-1 text-center bg-white/80 px-1.5 py-0.5 rounded shadow-sm">휴지통</span>
-        <span id="trashBadge" class="absolute top-1 right-2 bg-red-500 text-white text-[10px] px-1 rounded-full font-bold hidden">0</span>
-      </div>
-    </div>
-
-    <!-- 스티커 꾸미기 캔버스 영역 (바탕화면 우측 공간 활용) -->
-    <div id="stickerCanvasArea" class="flex-1 h-full border-2 border-dashed border-orange-200 rounded-3xl relative overflow-hidden bg-orange-50/20">
-      <div class="absolute top-3 right-4 text-xs font-bold text-orange-400 pointer-events-none bg-white/80 px-2 py-1 rounded-full shadow-sm">
-        ✨ 스티커 다꾸 보드 (오른쪽 도구함에서 추가 후 드래그 가능)
-      </div>
-      <!-- 이곳에 드래그 가능한 스티커 컴포넌트들이 동적으로 얹어집니다. -->
-    </div>
-
-    <!-- 우측 스티커 및 이미지 도구함 패널 -->
-    <div class="w-64 h-full bg-white/90 border border-orange-200 rounded-2xl p-4 flex flex-col gap-4 window-shadow">
-      <div>
-        <h3 class="font-bold text-orange-900 text-sm flex items-center gap-1">✨ 스티커 꾸미기 소스</h3>
-        <p class="text-[11px] text-orange-600 mt-0.5">원하는 디자인을 클릭하여 보드에 추가하세요.</p>
-      </div>
-      
-      <!-- 기본 제공 이모지/도트 스티커 스토어 -->
-      <div class="grid grid-cols-4 gap-2 bg-orange-50 p-2 rounded-xl max-h-36 overflow-y-auto">
-        <button onclick="addSticker('🍊')" class="text-2xl hover:scale-125 transition p-1 bg-white rounded shadow-sm">🍊</button>
-        <button onclick="addSticker('🧸')" class="text-2xl hover:scale-125 transition p-1 bg-white rounded shadow-sm">🧸</button>
-        <button onclick="addSticker('💫')" class="text-2xl hover:scale-125 transition p-1 bg-white rounded shadow-sm">💫</button>
-        <button onclick="addSticker('🎀')" class="text-2xl hover:scale-125 transition p-1 bg-white rounded shadow-sm">🎀</button>
-        <button onclick="addSticker('🍒')" class="text-2xl hover:scale-125 transition p-1 bg-white rounded shadow-sm">🍒</button>
-        <button onclick="addSticker('🐱')" class="text-2xl hover:scale-125 transition p-1 bg-white rounded shadow-sm">🐱</button>
-        <button onclick="addSticker('💖')" class="text-2xl hover:scale-125 transition p-1 bg-white rounded shadow-sm">💖</button>
-        <button onclick="addSticker('🍀')" class="text-2xl hover:scale-125 transition p-1 bg-white rounded shadow-sm">🍀</button>
-      </div>
-
-      <hr class="border-orange-100">
-
-      <!-- 사진 링크 커스텀 스티커 추가 섹션 -->
-      <div class="flex flex-col gap-2">
-        <h4 class="font-bold text-orange-800 text-xs flex items-center gap-1">🔗 외부 사진 주소 스티커</h4>
-        <input id="stickerUrlInput" type="text" placeholder="https://example.com/pic.png" 
-               class="w-full text-xs p-2 border border-orange-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 bg-orange-50/50">
-        <button onclick="addImageStickerFromUrl()" 
-                class="w-full text-xs font-bold py-1.5 px-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition shadow-sm cursor-pointer">
-          사진 스티커 추가하기
-        </button>
-      </div>
-
-      <div class="mt-auto bg-orange-50 p-2.5 rounded-xl border border-orange-100 text-[11px] text-orange-800">
-        <p class="font-bold mb-1">💡 사용 팁</p>
-        <p>• 추가된 스티커는 마우스로 드래그하여 위치를 옮깁니다.</p>
-        <p class="mt-0.5">• 더블클릭하면 해당 스티커가 완전히 삭제됩니다.</p>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- 멀티 윈도우 컴포넌트 구조 정의 -->
-
-  <!-- 1. 내 PC 윈도우 -->
-  <div id="win-pc" class="absolute w-[460px] bg-white rounded-2xl border border-orange-200 window-shadow hidden flex flex-col top-20 left-40" style="z-index:30;">
-    <div class="bg-orange-500 text-white px-4 py-2.5 rounded-t-2xl flex items-center justify-between font-bold text-sm cursor-move window-header">
-      <div class="flex items-center gap-2"><span>💻</span> 내 PC 시스템 분석기</div>
-      <button onclick="closeWindow('win-pc')" class="w-5 h-5 flex items-center justify-center bg-orange-600 rounded-full hover:bg-orange-700 text-xs cursor-pointer">×</button>
-    </div>
-    <div class="p-4 flex flex-col gap-3 text-xs text-orange-950">
-      <div class="bg-orange-50 p-3 rounded-xl border border-orange-100">
-        <p class="font-bold text-orange-800 text-sm mb-2">💻 Device Summary</p>
-        <p>📍 OS Version: <span class="font-bold text-orange-600">Orange Space OS V2</span></p>
-        <p>📍 스티커 오브젝트: <span id="pcStickerCount" class="font-bold">0</span> 개 배치됨</p>
-        <p>📍 휴지통 적재 개수: <span id="pcTrashCount" class="font-bold">0</span> 개</p>
-      </div>
-      <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
-        <p class="font-bold text-gray-700 mb-1">⚙️ 인프라 데이터 서버 (동기화 박스)</p>
-        <p class="text-[11px] text-gray-500 mb-2">관리자 모드 데이터 및 바뀐 세팅 정보가 이 텍스트 박스에 실시간 유지됩니다. 복사하여 다른 브라우저/PC의 하단 원격 로드창에 입력하면 완벽 동기화됩니다.</p>
-        <textarea id="winPcDbMirror" readonly class="w-full h-20 text-[10px] font-mono p-1 bg-white border border-gray-300 rounded focus:outline-none"></textarea>
-      </div>
-    </div>
-  </div>
-
-  <!-- 2. 내 문서 윈도우 -->
-  <div id="win-docs" class="absolute w-[500px] bg-white rounded-2xl border border-orange-200 window-shadow hidden flex flex-col top-16 left-80" style="z-index:30;">
-    <div class="bg-orange-500 text-white px-4 py-2.5 rounded-t-2xl flex items-center justify-between font-bold text-sm cursor-move window-header">
-      <div class="flex items-center gap-2"><span>📄</span> 내 문서 (다이어리 포스트 에디터)</div>
-      <button onclick="closeWindow('win-docs')" class="w-5 h-5 flex items-center justify-center bg-orange-600 rounded-full hover:bg-orange-700 text-xs cursor-pointer">×</button>
-    </div>
-    <!-- 에디터 컨트롤러 (관리자용) -->
-    <div id="adminEditorArea" class="p-4 border-b border-orange-100 bg-orange-50/30 flex flex-col gap-2">
-      <div class="flex gap-2">
-        <input id="docTitleInput" type="text" placeholder="문서 또는 포스트 제목을 입력하세요." class="flex-1 text-xs p-2 border border-orange-200 rounded-lg bg-white">
-        <input id="docImgInput" type="text" placeholder="첨부 사진 URL (선택)" class="w-1/3 text-xs p-2 border border-orange-200 rounded-lg bg-white">
-      </div>
-      <div class="flex gap-2 items-end">
-        <textarea id="docContentInput" placeholder="소중한 생각이나 이야기를 이곳에 남기세요..." class="flex-1 h-14 text-xs p-2 border border-orange-200 rounded-lg resize-none bg-white"></textarea>
-        <button onclick="addNewDocument()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-3 rounded-lg shadow-sm h-14 whitespace-nowrap cursor-pointer">
-          포스트 저장
-        </button>
-      </div>
-    </div>
-    <div id="nonAdminEditorMsg" class="p-3 bg-red-50 text-red-600 text-xs font-bold text-center border-b border-red-100 hidden">
-      🔒 새 포스트 작성 및 문서 수정은 관리자 모드가 활성화된 상태에서만 영구 반영 가능합니다.
-    </div>
-    <!-- 문서 리스트 피드 -->
-    <div id="documentListContainer" class="p-4 flex flex-col gap-3 max-h-72 overflow-y-auto bg-[#fffdfb]">
-      <!-- 동적 문서 렌더링 -->
-    </div>
-  </div>
-
-  <!-- 3. 내 사진 윈도우 (갤러리 완벽 복구) -->
-  <div id="win-photos" class="absolute w-[550px] bg-white rounded-2xl border border-orange-200 window-shadow hidden flex flex-col top-28 left-60" style="z-index:30;">
-    <div class="bg-orange-500 text-white px-4 py-2.5 rounded-t-2xl flex items-center justify-between font-bold text-sm cursor-move window-header">
-      <div class="flex items-center gap-2"><span>🖼️</span> 내 사진 아카이브 갤러리</div>
-      <button onclick="closeWindow('win-photos')" class="w-5 h-5 flex items-center justify-center bg-orange-600 rounded-full hover:bg-orange-700 text-xs cursor-pointer">×</button>
-    </div>
-    <div class="p-4">
-      <p class="text-xs text-orange-700 font-bold mb-3">📸 내 문서 피드에 이미지 주소와 함께 등록된 모든 사진 스냅샷 컬렉션입니다.</p>
-      <div id="galleryGridContainer" class="grid grid-cols-3 gap-3 max-h-80 overflow-y-auto p-1">
-        <!-- 동적 갤러리 이미지 추가 -->
-      </div>
-    </div>
-  </div>
-
-  <!-- 4. 휴지통 윈도우 (보관 및 복구 인프라) -->
-  <div id="win-trash" class="absolute w-[480px] bg-white rounded-2xl border border-orange-200 window-shadow hidden flex flex-col top-40 left-96" style="z-index:30;">
-    <div class="bg-gray-700 text-white px-4 py-2.5 rounded-t-2xl flex items-center justify-between font-bold text-sm cursor-move window-header">
-      <div class="flex items-center gap-2"><span>🗑️</span> 휴지통 시스템 보관소</div>
-      <div class="flex items-center gap-2">
-        <button onclick="emptyTrashAll()" class="text-[11px] bg-red-600 hover:bg-red-700 px-2 py-0.5 rounded font-normal transition cursor-pointer">전체 비우기</button>
-        <button onclick="closeWindow('win-trash')" class="w-5 h-5 flex items-center justify-center bg-gray-600 rounded-full hover:bg-gray-500 text-xs cursor-pointer">×</button>
-      </div>
-    </div>
-    <div class="p-4">
-      <p class="text-xs text-gray-500 mb-2">삭제된 문서 데이터는 이곳에 안전하게 임시 보관되며 복구가 가능합니다.</p>
-      <div id="trashListContainer" class="flex flex-col gap-2 max-h-64 overflow-y-auto bg-gray-50 p-2 rounded-xl border border-gray-200 min-h-[100px]">
-        <!-- 임시 삭제된 항목 리스트 -->
-      </div>
-    </div>
-  </div>
-
-  <!-- 5. 환경 설정 윈도우 (프로필, 상태메세지, 관리자 토글 신설) -->
-  <div id="win-settings" class="absolute w-[380px] bg-white rounded-2xl border border-orange-200 window-shadow hidden flex flex-col top-32 left-1/3" style="z-index:35;">
-    <div class="bg-orange-600 text-white px-4 py-2.5 rounded-t-2xl flex items-center justify-between font-bold text-sm cursor-move window-header">
-      <div class="flex items-center gap-2"><span>⚙️</span> 시스템 제어 및 프로필 설정</div>
-      <button onclick="closeWindow('win-settings')" class="w-5 h-5 flex items-center justify-center bg-orange-700 rounded-full hover:bg-orange-800 text-xs cursor-pointer">×</button>
-    </div>
-    <div class="p-5 flex flex-col gap-4 text-xs">
-      
-      <!-- 프로필 수정 컴포넌트 -->
-      <div class="bg-orange-50/50 p-4 rounded-xl border border-orange-100 flex flex-col gap-3">
-        <h4 class="font-bold text-orange-950 text-sm">👤 내 프로필 카드 변경</h4>
-        
-        <div class="flex flex-col gap-1">
-          <label class="font-bold text-orange-800">프로필 이미지 URL</label>
-          <input id="setProfileImgInput" type="text" placeholder="미입력 시 흰색 배경으로 유지됩니다." 
-                 class="w-full p-2 border border-orange-200 rounded-lg bg-white">
-        </div>
-
-        <div class="flex flex-col gap-1">
-          <label class="font-bold text-orange-800">프로필 이름</label>
-          <input id="setProfileNameInput" type="text" class="w-full p-2 border border-orange-200 rounded-lg bg-white">
-        </div>
-
-        <div class="flex flex-col gap-1">
-          <label class="font-bold text-orange-800">상태 메시지</label>
-          <input id="setProfileMsgInput" type="text" class="w-full p-2 border border-orange-200 rounded-lg bg-white">
-        </div>
-      </div>
-
-      <!-- 관리자 모드 토글 컴포넌트 -->
-      <div class="bg-orange-100/50 p-4 rounded-xl border border-orange-200 flex items-center justify-between">
-        <div>
-          <p class="font-bold text-orange-950">🔑 관리자 모드 권한 제어</p>
-          <p class="text-[10px] text-orange-600 mt-0.5">켜진 상태에서 데이터 영구 유지 및 저장이 작동합니다.</p>
-        </div>
-        <label class="relative inline-flex items-center cursor-pointer">
-          <input id="adminToggleCheck" type="checkbox" onchange="toggleAdminMode(this.checked)" class="sr-only peer">
-          <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
-        </label>
-      </div>
-
-      <button onclick="saveProfileSettings()" class="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow-sm text-center transition cursor-pointer">
-        프로필 세팅 적용 및 동기화
-      </button>
-    </div>
-  </div>
-
-
-  <!-- 하단 오렌지 네비게이션 & 상태 바 -->
-  <footer class="w-full bg-white border-t border-orange-200 py-2.5 px-4 flex items-center justify-between z-30 select-none">
-    
-    <!-- 왼쪽: 시작 및 핵심 프로필 컴포넌트 -->
-    <div class="flex items-center gap-3">
-      <!-- 시작 메뉴 버튼 -->
-      <button onclick="toggleStartMenu()" class="px-4 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black rounded-xl text-xs flex items-center gap-1 shadow-sm cursor-pointer retro-font">
-        <span>🍊</span> START
-      </button>
-
-      <!-- 사용자 정보 대시보드 위젯 -->
-      <div class="flex items-center gap-2 border-l border-orange-200 pl-3">
-        <!-- 프로필 사진 슬롯 (디폴트 화이트 공백) -->
-        <div id="barProfilePhoto" class="w-7 h-7 rounded-full border border-orange-300 bg-white overflow-hidden shadow-inner flex items-center justify-center text-[10px] text-gray-300">
-          <!-- 이미지 파일 경로 대입 예정 -->
-        </div>
-        <div class="flex flex-col">
-          <div class="flex items-center gap-1.5">
-            <span id="barProfileName" class="text-xs font-black text-orange-950">비초</span>
-            <span id="adminBadge" class="text-[9px] bg-orange-100 text-orange-700 px-1 rounded font-extrabold border border-orange-300">USER</span>
-          </div>
-          <span id="barProfileMsg" class="text-[10px] text-orange-600 font-medium">V2</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 중간: 원격 데이터 로더 (기기 간 영구 이동 공유 솔루션) -->
-    <div class="flex items-center gap-2 max-w-sm w-full bg-orange-50 px-2 py-1 rounded-xl border border-orange-200">
-      <span class="text-[10px] font-bold text-orange-800 whitespace-nowrap">🖥️ 타 PC 데이터 동기화:</span>
-      <input id="externalDbLoadInput" type="text" placeholder="JSON 문자열을 넣고 로드 클릭" class="flex-1 text-[10px] bg-white border border-orange-200 rounded px-1.5 py-0.5 focus:outline-none">
-      <button onclick="loadExternalDatabase()" class="text-[10px] bg-orange-500 text-white font-bold px-2 py-0.5 rounded hover:bg-orange-600 cursor-pointer">로드</button>
-    </div>
-
-    <!-- 오른쪽: 시스템 시계 -->
-    <div class="text-xs font-bold text-orange-900 bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100 retro-font" id="liveClock">
-      00:00:00
-    </div>
-  </footer>
-
-  <!-- 팝업 형태의 대형 시작 메뉴 -->
-  <div id="startMenuContainer" class="absolute left-4 bottom-14 w-60 bg-white border border-orange-200 rounded-2xl window-shadow p-3 hidden z-40 flex flex-col gap-1.5">
-    <div class="p-2 border-b border-orange-100 mb-1">
-      <p class="text-xs font-bold text-orange-950">Orange System 메뉴</p>
-      <p class="text-[10px] text-orange-500">원하시는 관리 기능을 토글하세요.</p>
-    </div>
-    <button onclick="handleMenuClick('win-pc')" class="w-full text-left p-2 hover:bg-orange-50 rounded-xl text-xs font-bold text-orange-900 flex items-center gap-2">
-      <span>💻</span> 내 PC 관리 시스템
-    </button>
-    <button onclick="handleMenuClick('win-docs')" class="w-full text-left p-2 hover:bg-orange-50 rounded-xl text-xs font-bold text-orange-900 flex items-center gap-2">
-      <span>📄</span> 내 문서 (다이어리 피드)
-    </button>
-    <button onclick="handleMenuClick('win-photos')" class="w-full text-left p-2 hover:bg-orange-50 rounded-xl text-xs font-bold text-orange-900 flex items-center gap-2">
-      <span>🖼️</span> 내 사진 보관함
-    </button>
-    <button onclick="handleMenuClick('win-trash')" class="w-full text-left p-2 hover:bg-orange-50 rounded-xl text-xs font-bold text-orange-900 flex items-center gap-2">
-      <span>🗑️</span> 휴지통 인프라 보러가기
-    </button>
-    <hr class="border-orange-100 my-1">
-    <button onclick="handleMenuClick('win-settings')" class="w-full text-left p-2 bg-orange-50 hover:bg-orange-100 rounded-xl text-xs font-black text-orange-900 flex items-center gap-2">
-      <span>⚙️</span> 프로필 및 설정 변경 (창 띄우기)
-    </button>
-  </div>
-
-  <!-- 인프라 자바스크립트 엔진 및 상호작용 제어 스크립트 -->
-  <script>
-    /* ==========================================
-       1. 통합 서버 데이터베이스 (영구 보관 상태 정의)
-       ========================================== */
-    let STATIC_SERVER_DB = {
-      profile: {
-        name: "비초",
-        statusMsg: "V2",
-        photoUrl: "" // 빈 문자열일 경우 기본 흰색 처리
-      },
-      isAdmin: false, // 디폴트 관리자 모드 꺼짐
-      documents: [
-        { id: 1, title: "웰컴 오렌지 스페이스 OS", content: "안녕하세요! 오렌지 감성의 데스크탑 공간 v2에 오신 것을 환영합니다. 다이어리 글과 예쁜 사진을 업로드해 보세요.", imgUrl: "", date: "2026.06.19" },
-        { id: 2, title: "귀여운 고양이 배경 피드 예시", content: "사진 갤러리 기능과 사진 링크 스티커 연동 테스트를 위한 샘플 이미지 아카이브 문서입니다.", imgUrl: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=500&q=80", date: "2026.06.19" }
-      ],
-      trash: [],
-      stickers: [
-        { id: "st-init-1", type: "emoji", content: "🍊", top: 150, left: 180, width: 50, height: 50 },
-        { id: "st-init-2", type: "emoji", content: "🧸", top: 220, left: 320, width: 50, height: 50 }
-      ]
-    };
-
-    // 로컬 스토리지에 세이브 데이터가 존재한다면 브라우저 캐시 우선 복구
-    if (localStorage.getItem("ORANGE_OS_DATABASE_V2")) {
-      try {
-        STATIC_SERVER_DB = JSON.parse(localStorage.getItem("ORANGE_OS_DATABASE_V2"));
-      } catch (e) {
-        console.error("데이터 로드 에러, 기본값으로 시작합니다.", e);
-      }
-    }
-
-    /* ==========================================
-       2. 눈 내리는 그래픽 효과 (Canvas Particle Engine)
-       ========================================== */
-    const canvas = document.getElementById("snowCanvas");
-    const ctx = canvas.getContext("2d");
-    let snowflakes = [];
-
-    function resizeSnowCanvas() {
+    function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     }
-    window.addEventListener("resize", resizeSnowCanvas);
-    resizeSnowCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
-    function createSnowflakes() {
-      snowflakes = [];
-      const count = 65; // 눈송이 밀도
-      for (let i = 0; i < count; i++) {
-        snowflakes.push({
-          x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
-          r: Math.random() * 3 + 1.5, // 눈송이 반경
-          d: Math.random() * count, // 밀도 정보 가중치
-          speed: Math.random() * 1 + 0.5
-        });
-      }
+    for(var i = 0; i < 60; i++) {
+      flakes.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        r: Math.random() * 3 + 1,
+        d: Math.random() * 1
+      });
     }
 
-    function drawSnowflakes() {
+    function drawFlakes() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "rgba(255, 180, 130, 0.45)"; // 부드러운 주황빛 살짝 도는 눈송이
+      ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
       ctx.beginPath();
-      for (let i = 0; i < snowflakes.length; i++) {
-        let f = snowflakes[i];
+      for(var i = 0; i < flakes.length; i++) {
+        var f = flakes[i];
         ctx.moveTo(f.x, f.y);
         ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2, true);
       }
       ctx.fill();
-      moveSnowflakes();
+      moveFlakes();
     }
 
-    function moveSnowflakes() {
-      for (let i = 0; i < snowflakes.length; i++) {
-        let f = snowflakes[i];
-        f.y += f.speed;
-        f.x += Math.sin(f.y / 30) * 0.4;
-
-        if (f.y > canvas.height) {
-          snowflakes[i] = {
-            x: Math.random() * canvas.width,
-            y: -10,
-            r: f.r,
-            d: f.d,
-            speed: f.speed
-          };
+    function moveFlakes() {
+      for(var i = 0; i < flakes.length; i++) {
+        var f = flakes[i];
+        f.y += Math.cos(f.d) + 1 + f.r / 2;
+        f.x += Math.sin(f.d) * 0.5;
+        if(f.y > canvas.height) {
+          flakes[i] = { x: Math.random() * canvas.width, y: -10, r: f.r, d: f.d };
         }
       }
     }
 
-    function loopSnow() {
-      drawSnowflakes();
-      requestAnimationFrame(loopSnow);
+    function run() {
+      drawFlakes();
+      requestAnimationFrame(run);
     }
-    createSnowflakes();
-    loopSnow();
+    run();
+  }
 
+  /* ---------- 창 최적화 제어 프로토콜 (닫기 / 축소 / 최대화 확대 복구) ---------- */
+  document.querySelectorAll('.mac-buttons').forEach(function(btnGroup){
+    btnGroup.addEventListener('click', function(e){
+      var btn = e.target;
+      if(!btn.classList.contains('mac-btn')) return;
+      var winId = btn.dataset.winid;
+      var win = document.getElementById(winId);
+      if(!win) return;
 
-    /* ==========================================
-       3. 윈도우 창 제어 및 최고 상단 배치 (Z-Index) 및 드래그 구현
-       ========================================== */
-    let topZIndex = 35;
+      if(btn.classList.contains('mac-close')) {
+        win.classList.remove('open');
+      } else if(btn.classList.contains('mac-min')) {
+        win.classList.toggle('minimized');
+      } else if(btn.classList.contains('mac-max')) {
+        if(win.style.width === '100vw') {
+          win.style.width = win.dataset.origW || '500px';
+          win.style.height = win.dataset.origH || '400px';
+          win.style.left = '100px'; win.style.top = '100px';
+        } else {
+          win.dataset.origW = win.style.width;
+          win.dataset.origH = win.style.height;
+          win.style.width = '100vw'; win.style.height = 'calc(100vh - 40px)';
+          win.style.left = '0'; win.style.top = '0';
+        }
+      }
+    });
+  });
 
-    function openWindow(id) {
-      const win = document.getElementById(id);
-      if (!win) return;
-      win.classList.remove('hidden');
-      topZIndex++;
-      win.style.zIndex = topZIndex;
+  /* ---------- 레이어 드래그앤드롭 및 포커싱 인프라 ---------- */
+  function bringToFront(el){ activeZIndex += 2; el.style.zIndex = activeZIndex; }
+  function setupWindowDrag(win){
+    var h = win.querySelector('.win-header'); if(!h) return;
+    var isM = false, sx = 0, sy = 0, il = 0, it = 0;
+    h.addEventListener('pointerdown', function(e){
+      if(e.target.classList.contains('mac-btn')) return;
+      isM = true; bringToFront(win); sx = e.clientX; sy = e.clientY;
+      var r = win.getBoundingClientRect(); il = r.left; it = r.top;
+      try{h.setPointerCapture(e.pointerId);}catch(_){}
+    });
+    h.addEventListener('pointermove', function(e){
+      if(!isM || win.style.width === '100vw') return;
+      win.style.left = (il + (e.clientX - sx)) + 'px';
+      win.style.top = (it + (e.clientY - sy)) + 'px';
+    });
+    var stop = function(){ isM = false; };
+    h.addEventListener('pointerup', stop); h.addEventListener('pointercancel', stop);
+    win.addEventListener('pointerdown', function(){ bringToFront(win); });
+  }
+  document.querySelectorAll('.window').forEach(setupWindowDrag);
+
+  document.addEventListener('click', function(e){
+    var open = e.target.closest('[data-openwin]');
+    if(open) {
+      var w = document.getElementById(open.dataset.openwin);
+      if(w) { w.classList.add('open'); w.classList.remove('minimized'); bringToFront(w); }
+      query('#start-menu-window').style.display = 'none';
+    }
+  });
+
+  /* ---------- 하단바 및 실시간 시계 ---------- */
+  query('#start-btn').addEventListener('click', function(e){
+    e.stopPropagation(); var m = query('#start-menu-window');
+    m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+  });
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('#start-menu-window') && !e.target.closest('#start-btn')) {
+      query('#start-menu-window').style.display = 'none';
+    }
+  });
+  function startClock(){
+    var d = new Date(); var h = d.getHours(); var m = String(d.getMinutes()).padStart(2,'0');
+    var a = h >= 12 ? 'PM' : 'AM'; h = h % 12; h = h ? h : 12;
+    query('#system-clock').textContent = h + ':' + m + ' ' + a;
+  }
+  setInterval(startClock, 4000); startClock();
+
+  /* ---------- 최고 관리자 인증 검증 ---------- */
+  query('#admin-login-indicator').addEventListener('click', function(){
+    if(!appState.isAdmin) {
+      var p = prompt("관리자 검증 패스워드를 입력하세요:");
+      if(p === ADMIN_PASSWORD) {
+        appState.isAdmin = true; alert("🔓 관리자 권한 승인 완료!"); syncAdminUI();
+      } else if(p !== null) { alert("❌ 인증에 실패했습니다."); }
+    } else {
+      if(confirm("관리자 모드를 취소할까요?")) { appState.isAdmin = false; syncAdminUI(); }
+    }
+  });
+  function syncAdminUI(){
+    if(appState.isAdmin) {
+      query('#admin-status-bar-text').textContent = "[🔓 최고 관리자 모드]";
+      query('#admin-status-bar-text').style.color = "var(--point-orange-mid)";
+      query('#admin-add-post-btn').style.display = "inline-block";
+    } else {
+      query('#admin-status-bar-text').textContent = "[일반 유저 모드]";
+      query('#admin-status-bar-text').style.color = "var(--text-muted)";
+      query('#admin-add-post-btn').style.display = "none";
+    }
+    renderFinderGrid();
+  }
+
+  function updateProfileUI(){
+    var p = appState.fileDB.profile || DEFAULT_BLANK_DB.profile;
+    query('#start-profile-name-text').textContent = p.name;
+    query('#start-profile-msg-text').textContent = p.msg;
+  }
+
+  /* ---------- 범용 디데이 위젯 제어 ---------- */
+  function updateDDayWidget(){
+    var d = appState.fileDB.dday || { title: 'D-Day를 설정해보세요', date: '' };
+    query('#wd-dday-title').textContent = d.title;
+    if(!d.date) { query('#wd-dday-days').textContent = 'D-OFF'; return; }
+    var tDate = new Date(d.date); tDate.setHours(0,0,0,0);
+    var today = new Date(); today.setHours(0,0,0,0);
+    var diff = Math.round((tDate - today) / (1000 * 60 * 60 * 24));
+    query('#wd-dday-days').textContent = diff === 0 ? 'D-DAY' : (diff > 0 ? 'D-' + diff : 'D+' + Math.abs(diff));
+  }
+  query('#wd-dday-trigger-box').addEventListener('click', function(){
+    var c = appState.fileDB.dday || { title: '', date: '' };
+    query('#form-dday-title').value = c.title; query('#form-dday-date').value = c.date;
+    var w = query('#win-admin-dday'); w.classList.add('open'); bringToFront(w);
+  });
+  query('#btn-admin-dday-save').addEventListener('click', function(){
+    var t = query('#form-dday-title').value.trim(); var d = query('#form-dday-date').value;
+    if(!t) return; appState.fileDB.dday = { title: t, date: d };
+    setStorage('masterFileDB', appState.fileDB); updateDDayWidget(); dumpCurrentDB();
+    query('#win-admin-dday').classList.remove('open');
+  });
+
+  /* ---------- 오렌지 메모장 제어 프로토콜 ---------- */
+  function renderNotepadTabs(){
+    var bar = query('#notepad-tabs-bar');
+    bar.querySelectorAll('.notepad-tab').forEach(function(el){ el.remove(); });
+    appState.notepadMemos.forEach(function(memo, idx){
+      var tab = document.createElement('div');
+      tab.className = 'notepad-tab' + (appState.activeTabIdx === idx ? ' active' : '');
+      tab.textContent = '메모' + (idx + 1);
+      tab.addEventListener('click', function(){
+        appState.notepadMemos[appState.activeTabIdx] = query('#notepad-textarea-core').value;
+        appState.activeTabIdx = idx; renderNotepadTabs();
+      });
+      bar.insertBefore(tab, query('#btn-notepad-add-tab'));
+    });
+    query('#notepad-textarea-core').value = appState.notepadMemos[appState.activeTabIdx] || '';
+    query('#notepad-char-counter').textContent = query('#notepad-textarea-core').value.length + '자';
+  }
+  query('#notepad-textarea-core').addEventListener('input', function(){
+    query('#notepad-char-counter').textContent = this.value.length + '자';
+    appState.notepadMemos[appState.activeTabIdx] = this.value; setStorage('notepadMemos', appState.notepadMemos);
+  });
+  query('#btn-notepad-add-tab').addEventListener('click', function(){
+    if(appState.notepadMemos.length >= 8) return;
+    appState.notepadMemos[appState.activeTabIdx] = query('#notepad-textarea-core').value;
+    appState.notepadMemos.push(''); appState.activeTabIdx = appState.notepadMemos.length - 1;
+    renderNotepadTabs();
+  });
+  query('#btn-notepad-clear-current').addEventListener('click', function(){ query('#notepad-textarea-core').value = ''; query('#notepad-char-counter').textContent = '0자'; appState.notepadMemos[appState.activeTabIdx] = ''; });
+
+  /* ---------- 타이머 및 뽀모도로 엔진 ---------- */
+  var timeRemaining = 1500, timerHandle = null;
+  document.querySelectorAll('.timer-preset-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ timeRemaining = parseInt(btn.dataset.min)*60; clearInterval(timerHandle); timerHandle=null; updateTimerUI(); });
+  });
+  function updateTimerUI(){
+    var m = String(Math.floor(timeRemaining / 60)).padStart(2, '0'); var s = String(timeRemaining % 60).padStart(2, '0');
+    query('#wd-timer-display').textContent = m + ':' + s;
+  }
+  query('#wctrl-start').addEventListener('click', function(){
+    if(timerHandle) return;
+    timerHandle = setInterval(function(){ if(timeRemaining > 0){timeRemaining--; updateTimerUI();}else{clearInterval(timerHandle); timerHandle=null; alert("시간이 완료되었습니다!");} }, 1000);
+  });
+  query('#wctrl-reset').addEventListener('click', function(){ clearInterval(timerHandle); timerHandle=null; timeRemaining=1500; updateTimerUI(); });
+
+  /* ---------- 유튜브 임베디드 뮤직 엔진 ---------- */
+  window.onYouTubeIframeAPIReady = function() {
+    appState.ytPlayer = new YT.Player('yt-audio-player-engine', {
+      height: '1', width: '1', videoId: '', playerVars: { 'autoplay': 0, 'controls': 0 },
+      events: { 'onStateChange': function(e){
+        if(e.data == YT.PlayerState.PLAYING) {
+          query('#mctrl-play').textContent = "⏸";
+          if(appState.ytPlayer.getVideoData) { query('#music-track-title').textContent = appState.ytPlayer.getVideoData().title || '재생중'; }
+          startMusicTimer();
+        } else { query('#mctrl-play').textContent = "▶"; clearInterval(appState.musicProgressTimer); }
+      }}
+    });
+  };
+  query('#music-yt-url-input').addEventListener('keypress', function(e){
+    if(e.key === 'Enter') {
+      var url = this.value.trim(); if(!url) return;
+      var vid = ''; if(url.indexOf('v=')>-1){vid=url.split('v=')[1].split('&')[0];}else if(url.indexOf('youtu.be/')>-1){vid=url.split('youtu.be/')[1].split('?')[0];}
+      if(vid && appState.ytPlayer) { appState.ytPlayer.loadVideoById(vid); setStorage('curTrackUrl', url); }
+    }
+  });
+  query('#mctrl-play').addEventListener('click', function(){
+    if(!appState.ytPlayer) return;
+    if(appState.ytPlayer.getPlayerState() == YT.PlayerState.PLAYING) { appState.ytPlayer.pauseVideo(); } else { appState.ytPlayer.playVideo(); }
+  });
+  function startMusicTimer(){
+    clearInterval(appState.musicProgressTimer);
+    appState.musicProgressTimer = setInterval(function(){
+      if(appState.ytPlayer && appState.ytPlayer.getCurrentTime) {
+        var c = appState.ytPlayer.getCurrentTime(); var d = appState.ytPlayer.getDuration() || 1;
+        query('#music-progress-bar-fill').style.width = (c/d*100) + '%';
+        query('#music-current-time-txt').textContent = Math.floor(c/60) + ':' + String(Math.floor(c%60)).padStart(2,'0');
+        query('#music-total-time-txt').textContent = Math.floor(d/60) + ':' + String(Math.floor(d%60)).padStart(2,'0');
+      }
+    }, 500);
+  }
+
+  /* ---------- 할 일 목록 주황 테마 제어 시스템 ---------- */
+  function renderTodoList(){
+    var c = query('#wd-todo-items-list'); c.innerHTML = '';
+    appState.todoList.forEach(function(todo, idx){
+      var r = document.createElement('div'); r.className = 'todo-item-row';
+      r.innerHTML = `<input type="checkbox" ${todo.done ? 'checked' : ''}> <span style="${todo.done ? 'text-decoration:line-through; opacity:0.5;' : ''}">${todo.text}</span>`;
+      r.querySelector('input').addEventListener('change', function(e){
+        appState.todoList[idx].done = e.target.checked; setStorage('todoList', appState.todoList); renderTodoList();
+      });
+      c.appendChild(r);
+    });
+  }
+  query('#wd-todo-input-field').addEventListener('keypress', function(e){
+    if(e.key === 'Enter') {
+      var v = this.value.trim(); if(!v) return;
+      appState.todoList.push({ text: v, done: false }); this.value = '';
+      setStorage('todoList', appState.todoList); renderTodoList();
+    }
+  });
+
+  /* ---------- 🗂️ 기존 정렬 방식 복구 및 사진 1열 3장 뷰어 고도화 ---------- */
+  function renderFinderGrid(){
+    var body = query('#finder-main-body'); body.innerHTML = '';
+    var active = appState.currentCategory;
+
+    if(active === 'gb') {
+      query('#content-items-count').textContent = '방명록 한마디';
+      body.innerHTML = `<div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; gap:6px;"><input type="text" id="gb-txt" class="todo-input-style" placeholder="방명록 남기기..."><button id="gb-btn" style="background:var(--point-orange-mid); color:white; border:none; padding:0 12px; border-radius:4px; cursor:pointer;">등록</button></div>
+        <div id="gb-list" style="display:flex; flex-direction:column; gap:6px; margin-top:6px;"></div>
+      </div>`;
+      var list = query('#gb-list'); (getStorage('gbData') || []).forEach(function(g){
+        var d = document.createElement('div'); d.style.cssText = "background:var(--point-orange-light); padding:8px; border-radius:4px; font-size:11px;"; d.textContent = g.text; list.appendChild(d);
+      });
+      query('#gb-btn').onclick = function(){
+        var i = query('#gb-txt'); if(!i.value.trim()) return;
+        var arr = getStorage('gbData') || []; arr.unshift({ text: i.value.trim() }); setStorage('gbData', arr); i.value = ''; renderFinderGrid();
+      };
+      return;
+    }
+
+    var listData = [];
+    var isPhotoCategory = false; // 📸 사진 모드 체크 플래그 변수
+
+    if(active === 'all') {
+      var db = appState.fileDB; listData = [].concat(db.c_sub_diary||[], db.c_sub_note||[], db.p_sub_log||[], db.p_sub_gift||[]);
+    } else if(active === 'c' || active === 'photos') {
+      var db = appState.fileDB;
+      if(active === 'c') listData = [].concat(db.c_sub_diary||[], db.c_sub_note||[]);
+      if(active === 'photos') { listData = [].concat(db.p_sub_log||[], db.p_sub_gift||[]); isPhotoCategory = true; }
+    } else {
+      listData = appState.fileDB[active] || [];
+      if(active === 'p_sub_log' || active === 'p_sub_gift') { isPhotoCategory = true; }
+    }
+
+    query('#content-items-count').textContent = '항목 ' + listData.length + '개';
+    
+    var grid = document.createElement('div');
+    // 🖼️ 요구사항 반영: 사진 관련 카테고리일 경우 무조건 1열에 3장씩 배치하는 클래스 할당
+    grid.className = isPhotoCategory ? 'grid-layout-photos-3col' : 'grid-layout-original';
+
+    listData.forEach(function(item){
+      var card = document.createElement('div'); card.className = 'card-style-original';
+      var badge = appState.isAdmin ? `<button class="admin-badge-btn">✏️</button>` : '';
       
-      // 윈도우가 열릴 때 동적 내부 렌더링 갱신 연동
-      if (id === 'win-docs') renderDocuments();
-      if (id === 'win-photos') renderPhotosGallery();
-      if (id === 'win-trash') renderTrashContainer();
-      if (id === 'win-settings') initSettingsWindowInputs();
+      // 이모지 대체 및 이미지 박스 동적 컴포넌트
+      var iconInner = item.src ? `<img src="${item.src}">` : '📄';
+      card.innerHTML = `${badge}<div class="card-icon-wrap">${iconInner}</div><div class="card-text-original">${item.title}</div>`;
       
-      updateSystemCounters();
+      card.addEventListener('click', function(e){
+        if(e.target.classList.contains('admin-badge-btn')) {
+          e.stopPropagation();
+          query('#form-edit-id').value = item.id;
+          query('#form-item-category').value = active==='all'?'c_sub_diary':active;
+          query('#form-item-title').value = item.title;
+          query('#form-item-src').value = item.src || '';
+          query('#form-item-text').value = item.text || '';
+          query('#btn-admin-delete-action').style.display = 'block';
+          var w = query('#win-admin-editor'); w.classList.add('open'); bringToFront(w);
+        } else {
+          openBlogPostView(item);
+        }
+      });
+      grid.appendChild(card);
+    });
+    body.appendChild(grid);
+  }
+
+  function openBlogPostView(item){
+    query('#blog-detail-content-target').innerHTML = `
+      <div class="blog-view-frame">
+        <div class="blog-header-section">
+          <div class="blog-title">${item.title}</div>
+          <div class="blog-heart-icon" onclick="this.classList.toggle('active'); this.textContent=this.classList.contains('active')?'♥':'♡';">♡</div>
+        </div>
+        <div class="blog-date">작성일: ${item.date}</div>
+        <hr class="blog-divider">
+        <div class="blog-center-wrap">
+          ${item.src ? `<img class="blog-deco-img" src="${item.src}">` : ''}
+          <div class="blog-main-content">${item.text}</div>
+        </div>
+      </div>
+    `;
+    var w = query('#win-blog-detail'); w.classList.add('open'); w.classList.remove('minimized'); bringToFront(w);
+  }
+
+  function dumpCurrentDB(){
+    query('#admin-db-dump-output').value = JSON.stringify(appState.fileDB);
+  }
+
+  query('#admin-add-post-btn').addEventListener('click', function(){
+    query('#form-edit-id').value = ''; query('#form-item-title').value = ''; query('#form-item-src').value = ''; query('#form-item-text').value = '';
+    query('#btn-admin-delete-action').style.display = 'none';
+    var w = query('#win-admin-editor'); w.classList.add('open'); bringToFront(w);
+  });
+
+  query('#btn-admin-submit-action').addEventListener('click', function(){
+    var id = query('#form-edit-id').value; var cate = query('#form-item-category').value;
+    var t = query('#form-item-title').value.trim(); var s = query('#form-item-src').value.trim(); var txt = query('#form-item-text').value.trim();
+    if(!t || !txt) return;
+
+    Object.keys(appState.fileDB).forEach(function(k){ if(Array.isArray(appState.fileDB[k])){appState.fileDB[k]=appState.fileDB[k].filter(function(i){return i.id!==id;});} });
+    var targetId = id ? id : 'p_' + Date.now();
+    appState.fileDB[cate].unshift({ id: targetId, title: t, src: s, text: txt, date: new Date().toISOString().split('T')[0] });
+    
+    setStorage('masterFileDB', appState.fileDB); query('#win-admin-editor').classList.remove('open');
+    renderFinderGrid(); dumpCurrentDB();
+  });
+
+  query('#btn-admin-delete-action').addEventListener('click', function(){
+    var id = query('#form-edit-id').value; if(!id) return;
+    Object.keys(appState.fileDB).forEach(function(k){ if(Array.isArray(appState.fileDB[k])){appState.fileDB[k]=appState.fileDB[k].filter(function(i){return i.id!==id;});} });
+    setStorage('masterFileDB', appState.fileDB); query('#win-admin-editor').classList.remove('open');
+    renderFinderGrid(); dumpCurrentDB();
+  });
+
+  /* ---------- 시스템 이니셜라이저 ---------- */
+  function initOS(){
+    var local = getStorage('masterFileDB');
+    if(STATIC_SERVER_DB && STATIC_SERVER_DB.length > 0) {
+      appState.fileDB = STATIC_SERVER_DB;
+    } else {
+      appState.fileDB = local ? local : DEFAULT_BLANK_DB;
+    }
+    
+    // 기본 고정 프로필 강제 설정 초기화
+    if(!appState.fileDB.profile || appState.fileDB.profile.name !== '비초') {
+      appState.fileDB.profile = { name: '비초', msg: 'V2' };
     }
 
-    function closeWindow(id) {
-      const win = document.getElementById(id);
-      if (win) win.classList.add('hidden');
-    }
+    appState.notepadMemos = getStorage('notepadMemos') || [""];
+    appState.todoList = getStorage('todoList') || [];
 
-    function makeWindowDraggable(winEl) {
-      const header = winEl.querySelector('.window-header');
-      if (!header) return;
-
-      let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-      header.onmousedown = dragMouseDown;
-
-      function dragMouseDown(e) {
-        if (e.target.tagName === 'BUTTON') return;
-        e = e || window.event;
-        e.preventDefault();
-        topZIndex++;
-        winEl.style.zIndex = topZIndex;
-
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        document.onmouseup = closeDragElement;
-        document.onmousemove = elementDrag;
-      }
-
-      function elementDrag(e) {
-        e = e || window.event;
-        e.preventDefault();
-        pos1 = pos3 - e.clientX;
-        pos2 = pos4 - e.clientY;
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        winEl.style.top = (winEl.offsetTop - pos2) + "px";
-        winEl.style.left = (winEl.offsetLeft - pos1) + "px";
-      }
-
-      function closeDragElement() {
-        document.onmouseup = null;
-        document.onmousemove = null;
-      }
-    }
-
-    // 존재하는 모든 멀티윈도우 컴포넌트에 드래그 핸들링 바인딩
-    document.querySelectorAll('#win-pc, #win-docs, #win-photos, #win-trash, #win-settings').forEach(win => {
-      makeWindowDraggable(win);
-      win.addEventListener('mousedown', () => {
-        topZIndex++;
-        win.style.zIndex = topZIndex;
+    document.querySelectorAll('.sidebar-item').forEach(function(item){
+      item.addEventListener('click', function(){
+        document.querySelectorAll('.sidebar-item').forEach(function(i){ i.classList.remove('active'); });
+        item.classList.add('active'); appState.currentCategory = item.dataset.cate; renderFinderGrid();
       });
     });
 
-    function toggleStartMenu() {
-      const menu = document.getElementById('startMenuContainer');
-      menu.classList.toggle('hidden');
-    }
-
-    function handleMenuClick(winId) {
-      openWindow(winId);
-      document.getElementById('startMenuContainer').classList.add('hidden');
-    }
-
-
-    /* ==========================================
-       4. 시스템 코어 기능 렌더링 로직 (프로필 / 문서 / 휴지통 / 사진)
-       ========================================== */
-    
-    // 글로벌 브라우저 로컬 데이터베이스 강제 커밋 저장
-    function commitToDatabase() {
-      localStorage.setItem("ORANGE_OS_DATABASE_V2", JSON.stringify(STATIC_SERVER_DB));
-      updateSystemCounters();
-    }
-
-    // UI 하단 프로필 및 위젯 정보 동기화
-    function syncUiProfileView() {
-      const prof = STATIC_SERVER_DB.profile;
-      
-      // 이름, 메시지 매핑
-      document.getElementById('barProfileName').innerText = prof.name || "비초";
-      document.getElementById('barProfileMsg').innerText = prof.statusMsg || "V2";
-      
-      // 프로필 사진 매핑 (값이 비어있을 시 깔끔한 흰색)
-      const photoDiv = document.getElementById('barProfilePhoto');
-      if (prof.photoUrl && prof.photoUrl.trim() !== "") {
-        photoDiv.innerHTML = `<img src="${prof.photoUrl}" class="w-full h-full object-cover">`;
-        photoDiv.style.backgroundColor = "transparent";
-      } else {
-        photoDiv.innerHTML = "";
-        photoDiv.style.backgroundColor = "#ffffff";
-      }
-
-      // 관리자 뱃지 상태 업데이트
-      const badge = document.getElementById('adminBadge');
-      if (STATIC_SERVER_DB.isAdmin) {
-        badge.innerText = "ADMIN";
-        badge.className = "text-[9px] bg-red-500 text-white px-1 rounded font-extrabold border border-red-600";
-        document.getElementById('adminEditorArea').classList.remove('hidden');
-        document.getElementById('nonAdminEditorMsg').classList.add('hidden');
-      } else {
-        badge.innerText = "USER";
-        badge.className = "text-[9px] bg-orange-100 text-orange-700 px-1 rounded font-extrabold border border-orange-300";
-        document.getElementById('adminEditorArea').classList.add('hidden');
-        document.getElementById('nonAdminEditorMsg').classList.remove('hidden');
-      }
-    }
-
-    // 설정 창 인풋 요소 초기 채우기
-    function initSettingsWindowInputs() {
-      document.getElementById('setProfileNameInput').value = STATIC_SERVER_DB.profile.name;
-      document.getElementById('setProfileMsgInput').value = STATIC_SERVER_DB.profile.statusMsg;
-      document.getElementById('setProfileImgInput').value = STATIC_SERVER_DB.profile.photoUrl;
-      document.getElementById('adminToggleCheck').checked = STATIC_SERVER_DB.isAdmin;
-    }
-
-    // 관리자 모드 실시간 토글 제어
-    function toggleAdminMode(isChecked) {
-      STATIC_SERVER_DB.isAdmin = isChecked;
-      commitToDatabase();
-      syncUiProfileView();
-    }
-
-    // 설정창에서 프로필 데이터 최종 변경 저장 클릭 시
-    function saveProfileSettings() {
-      // 주어지지 않은 조건 없이 관리자 모드가 켜진 경우에 한하여 영구 유지 저장 메커니즘 제공
-      if (!STATIC_SERVER_DB.isAdmin) {
-        alert("🔒 권한 경고: 하단의 '관리자 모드 권한 제어' 스위치를 활성화하신 다음에 변경해야 다른 PC 및 브라우저에서도 완전한 영구 저장이 보장됩니다.");
-      }
-      
-      STATIC_SERVER_DB.profile.name = document.getElementById('setProfileNameInput').value || "비초";
-      STATIC_SERVER_DB.profile.statusMsg = document.getElementById('setProfileMsgInput').value || "V2";
-      STATIC_SERVER_DB.profile.photoUrl = document.getElementById('setProfileImgInput').value;
-
-      commitToDatabase();
-      syncUiProfileView();
-      alert("⚙️ 프로필 세팅 정보가 로컬 코어 서버에 안전하게 적용 및 동기화되었습니다!");
-    }
-
-    // 시스템 각종 카운터 정보 전역 리프레시
-    function updateSystemCounters() {
-      const docCount = STATIC_SERVER_DB.documents.length;
-      const trashCount = STATIC_SERVER_DB.trash.length;
-      const stickerCount = STATIC_SERVER_DB.stickers.length;
-
-      // 휴지통 배지 처리
-      const badge = document.getElementById('trashBadge');
-      if (trashCount > 0) {
-        badge.innerText = trashCount;
-        badge.classList.remove('hidden');
-        document.getElementById('trashIconImg').innerText = "🗑️"; 
-      } else {
-        badge.classList.add('hidden');
-        document.getElementById('trashIconImg').innerText = "🗑️";
-      }
-
-      // 내 PC 요약본 텍스트 매핑
-      document.getElementById('pcStickerCount').innerText = stickerCount;
-      document.getElementById('pcTrashCount').innerText = trashCount;
-
-      // DB 미러 문자열 갱신
-      document.getElementById('winPcDbMirror').value = JSON.stringify(STATIC_SERVER_DB);
-    }
-
-    // 외부 PC 데이터 가져와서 인스턴스 로드 병합하기
-    function loadExternalDatabase() {
-      const rawJson = document.getElementById('externalDbLoadInput').value.trim();
-      if (!rawJson) {
-        alert("가져올 동기화 JSON 코드가 비어있습니다.");
-        return;
-      }
-      try {
-        const parsed = JSON.parse(rawJson);
-        if (parsed.profile && parsed.documents && parsed.stickers) {
-          STATIC_SERVER_DB = parsed;
-          commitToDatabase();
-          syncUiProfileView();
-          renderDocuments();
-          renderPhotosGallery();
-          renderTrashContainer();
-          renderAllStickersFromDb();
-          alert("🎉 외부 PC의 모든 환경설정, 휴지통, 문서, 스티커 다꾸 정보가 완벽히 로드 및 공유되었습니다!");
-        } else {
-          alert("올바른 Orange Space OS 데이터 구조 형식이 아닙니다.");
-        }
-      } catch (e) {
-        alert("데이터 파싱 중 에러가 발생했습니다. 규격을 확인하세요.");
-      }
-    }
-
-
-    /* ==========================================
-       5. 내 문서 (다이어리 포스트) 및 휴지통(Trash) 로직
-       ========================================== */
-    
-    // 문서 리스트 렌더링
-    function renderDocuments() {
-      const container = document.getElementById('documentListContainer');
-      container.innerHTML = "";
-
-      if (STATIC_SERVER_DB.documents.length === 0) {
-        container.innerHTML = `<p class="text-center text-xs text-orange-400 py-6">📄 등록된 문서가 없습니다. 새 이야기를 작성해 보세요!</p>`;
-        return;
-      }
-
-      STATIC_SERVER_DB.documents.forEach(doc => {
-        const docBox = document.createElement('div');
-        docBox.className = "p-3 bg-white border border-orange-100 rounded-xl shadow-xs flex flex-col gap-1.5 relative group hover:border-orange-300 transition";
-        
-        let imgTag = "";
-        if (doc.imgUrl && doc.imgUrl.trim() !== "") {
-          imgTag = `<img src="${doc.imgUrl}" class="w-full h-32 object-cover rounded-lg my-1 border border-orange-100">`;
-        }
-
-        docBox.innerHTML = `
-          <div class="flex items-center justify-between">
-            <h5 class="font-black text-orange-950 text-xs">${doc.title}</h5>
-            <span class="text-[9px] text-orange-400 font-mono">${doc.date}</span>
-          </div>
-          <p class="text-[11px] text-orange-800 leading-relaxed whitespace-pre-wrap">${doc.content}</p>
-          ${imgTag}
-          <button onclick="moveDocToTrash(${doc.id})" class="absolute top-2 right-2 text-[10px] text-red-500 hover:text-red-700 font-bold opacity-0 group-hover:opacity-100 transition cursor-pointer">
-            삭제
-          </button>
-        `;
-        container.appendChild(docBox);
-      });
-    }
-
-    // 새 포스트 문서 추가 액션
-    function addNewDocument() {
-      const title = document.getElementById('docTitleInput').value.trim();
-      const imgUrl = document.getElementById('docImgInput').value.trim();
-      const content = document.getElementById('docContentInput').value.trim();
-
-      if (!title || !content) {
-        alert("제목과 본문 내용은 필수 기입 조건입니다.");
-        return;
-      }
-
-      const newDoc = {
-        id: Date.now(),
-        title: title,
-        content: content,
-        imgUrl: imgUrl,
-        date: new Date().toLocaleDateString('ko-KR')
-      };
-
-      STATIC_SERVER_DB.documents.unshift(newDoc);
-      commitToDatabase();
-      renderDocuments();
-      renderPhotosGallery(); // 사진 갤러리도 실시간 동기화 업데이트
-
-      // 폼 리셋
-      document.getElementById('docTitleInput').value = "";
-      document.getElementById('docImgInput').value = "";
-      document.getElementById('docContentInput').value = "";
-    }
-
-    // 문서를 영구 지우지 않고 일단 휴지통으로 안전하게 던지기
-    function moveDocToTrash(id) {
-      const index = STATIC_SERVER_DB.documents.findIndex(d => d.id === id);
-      if (index === -1) return;
-
-      const targetDoc = STATIC_SERVER_DB.documents.splice(index, 1)[0];
-      STATIC_SERVER_DB.trash.push(targetDoc); // 휴지통 배열에 적재 보관
-
-      commitToDatabase();
-      renderDocuments();
-      renderPhotosGallery();
-      renderTrashContainer();
-    }
-
-    // 휴지통 화면 그리기
-    function renderTrashContainer() {
-      const container = document.getElementById('trashListContainer');
-      container.innerHTML = "";
-
-      if (STATIC_SERVER_DB.trash.length === 0) {
-        container.innerHTML = `<p class="text-center text-xs text-gray-400 py-8">🗑️ 휴지통이 비어 있습니다.</p>`;
-        return;
-      }
-
-      STATIC_SERVER_DB.trash.forEach(item => {
-        const itemBox = document.createElement('div');
-        itemBox.className = "p-2 bg-white border border-gray-200 rounded-lg flex items-center justify-between text-[11px] text-gray-700";
-        itemBox.innerHTML = `
-          <div class="flex flex-col max-w-[320px]">
-            <span class="font-bold text-gray-900 truncate">${item.title}</span>
-            <span class="text-[9px] text-gray-400 truncate">${item.content}</span>
-          </div>
-          <div class="flex gap-1.5 shrink-0">
-            <button onclick="restoreFromTrash(${item.id})" class="bg-emerald-50 text-emerald-600 font-bold px-2 py-0.5 rounded hover:bg-emerald-100 transition cursor-pointer">복구</button>
-            <button onclick="permaDeleteTrash(${item.id})" class="bg-red-50 text-red-600 font-bold px-2 py-0.5 rounded hover:bg-red-100 transition cursor-pointer">완전삭제</button>
-          </div>
-        `;
-        container.appendChild(itemBox);
-      });
-    }
-
-    // 휴지통에서 다시 문서로 안전하게 끄집어내 복구하기
-    function restoreFromTrash(id) {
-      const idx = STATIC_SERVER_DB.trash.findIndex(t => t.id === id);
-      if (idx === -1) return;
-
-      const restoredItem = STATIC_SERVER_DB.trash.splice(idx, 1)[0];
-      STATIC_SERVER_DB.documents.push(restoredItem);
-
-      commitToDatabase();
-      renderDocuments();
-      renderPhotosGallery();
-      renderTrashContainer();
-    }
-
-    // 휴지통 개별 완전 소멸 삭제
-    function permaDeleteTrash(id) {
-      if (!confirm("이 포스트 문서를 영구적으로 삭제하시겠습니까? 복구가 불가합니다.")) return;
-      STATIC_SERVER_DB.trash = STATIC_SERVER_DB.trash.filter(t => t.id !== id);
-      commitToDatabase();
-      renderTrashContainer();
-    }
-
-    // 휴지통 전체 비우기 버튼 액션
-    function emptyTrashAll() {
-      if (STATIC_SERVER_DB.trash.length === 0) return;
-      if (!confirm("휴지통의 모든 데이터를 영구적으로 비우시겠습니까?")) return;
-      STATIC_SERVER_DB.trash = [];
-      commitToDatabase();
-      renderTrashContainer();
-    }
-
-
-    /* ==========================================
-       6. '내 사진' 갤러리 기능 복구 엔진
-       ========================================== */
-    function renderPhotosGallery() {
-      const grid = document.getElementById('galleryGridContainer');
-      grid.innerHTML = "";
-
-      // 내 문서의 전체 글들 중 이미지 URL 경로가 존재하는 대상 스냅샷만 필터링 수집
-      const photoDocs = STATIC_SERVER_DB.documents.filter(d => d.imgUrl && d.imgUrl.trim() !== "");
-
-      if (photoDocs.length === 0) {
-        grid.innerHTML = `<div class="col-span-3 text-center text-xs text-orange-400 py-10">🖼️ 첨부된 사진을 가진 포스트가 없습니다.</div>`;
-        return;
-      }
-
-      photoDocs.forEach(doc => {
-        const card = document.createElement('div');
-        card.className = "bg-orange-50/50 border border-orange-100 rounded-xl p-1.5 flex flex-col gap-1 hover:shadow-md transition relative group";
-        card.innerHTML = `
-          <div class="w-full h-24 overflow-hidden rounded-lg bg-white border border-orange-200">
-            <img src="${doc.imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/150?text=Error+Link'">
-          </div>
-          <span class="text-[10px] text-orange-950 font-bold truncate px-0.5 block">${doc.title}</span>
-          <button onclick="addStickerFromGallery('${doc.imgUrl}')" class="absolute bottom-6 right-2 bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow opacity-0 group-hover:opacity-100 transition cursor-pointer">
-            스티커로 사용
-          </button>
-        `;
-        grid.appendChild(card);
-      });
-    }
-
-    // 내 사진 보관함 썸네일에서 바로 다꾸 스티커 보드로 전송 복사시키는 기능 편의 연동
-    function addStickerFromGallery(url) {
-      addSticker('image', url);
-    }
-
-
-    /* ==========================================
-       7. 확장형 스티커 꾸미기(다꾸) & 사진 URL 스티커 엔진
-       ========================================== */
-    
-    // 기본형 이모지 스티커 추가 허브 버튼 바인딩
-    function addSticker(typeOrContent, optionalImgUrl = "") {
-      let newStickerObj = {
-        id: "st-" + Date.now(),
-        top: 80 + Math.random() * 120,
-        left: 80 + Math.random() * 200,
-        width: 60,
-        height: 60
-      };
-
-      if (typeOrContent === 'image') {
-        newStickerObj.type = "image";
-        newStickerObj.content = optionalImgUrl;
-        newStickerObj.width = 100; // 이미지 스티커 기본 스케일 기본값 최적화
-        newStickerObj.height = 100;
-      } else {
-        newStickerObj.type = "emoji";
-        newStickerObj.content = typeOrContent;
-      }
-
-      STATIC_SERVER_DB.stickers.push(newStickerObj);
-      commitToDatabase();
-      createStickerElementOnBoard(newStickerObj);
-    }
-
-    // 커스텀 사진 입력창 링크를 통한 인스턴스 스티커 추가
-    function addImageStickerFromUrl() {
-      const urlInput = document.getElementById('stickerUrlInput');
-      const url = urlInput.value.trim();
-
-      if (!url) {
-        alert("올바른 이미지 소스 주소(URL) 링크를 입력하셔야 합니다.");
-        return;
-      }
-
-      addSticker('image', url);
-      urlInput.value = ""; // 입력 가이드 초기화
-    }
-
-    // 메모리 내 저장된 모든 스티커 데이터셋을 보드에 재생성 루프 실행
-    function renderAllStickersFromDb() {
-      const board = document.getElementById('stickerCanvasArea');
-      // 기존 떠있는 스티커 돔 엘리먼트 완전 초기화 거르기 (가이드 메시지 텍스트 노드는 보존)
-      const existingStickers = board.querySelectorAll('.draggable-sticker-node');
-      existingStickers.forEach(el => el.remove());
-
-      STATIC_SERVER_DB.stickers.forEach(st => {
-        createStickerElementOnBoard(st);
-      });
-    }
-
-    // 하나의 스티커를 실제 다꾸 보드 DOM 구조 오브젝트로 형성 및 드래그 바인딩
-    function createStickerElementOnBoard(st) {
-      const board = document.getElementById('stickerCanvasArea');
-      const stickerNode = document.createElement('div');
-      stickerNode.id = st.id;
-      stickerNode.className = "absolute draggable-sticker-node select-none cursor-move group touch-none";
-      stickerNode.style.top = st.top + "px";
-      stickerNode.style.left = st.left + "px";
-
-      let innerCoreHtml = "";
-      if (st.type === 'image') {
-        innerCoreHtml = `<img src="${st.content}" class="w-full h-full object-contain pointer-events-none rounded-md border border-orange-200/50 shadow-sm bg-white" onerror="this.src='https://placehold.co/100?text=Broken+Img'">`;
-        stickerNode.style.width = (st.width || 100) + "px";
-        stickerNode.style.height = (st.height || 100) + "px";
-      } else {
-        innerCoreHtml = `<span class="text-4xl block filter drop-shadow-sm">${st.content}</span>`;
-        stickerNode.style.width = "auto";
-        stickerNode.style.height = "auto";
-      }
-
-      // 우측 하단 크기 조절 리사이저 핸들 (이미지 전용)
-      let resizerHtml = "";
-      if (st.type === 'image') {
-        resizerHtml = `<div class="absolute -bottom-1 -right-1 w-3 h-3 bg-orange-500 rounded-full cursor-se-resize hidden group-hover:block sticker-resizer-handle"></div>`;
-      }
-
-      // 더블클릭 안내 레이블 툴팁 효과
-      stickerNode.innerHTML = `
-        ${innerCoreHtml}
-        ${resizerHtml}
-        <div class="absolute -top-5 left-1/2 -translate-x-1/2 text-[8px] bg-red-600 text-white font-bold px-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none">더블클릭시 삭제</div>
-      `;
-
-      board.appendChild(stickerNode);
-
-      // 더블클릭 이벤트 바인딩 -> 스티커 완전 파괴 제거
-      stickerNode.ondblclick = function() {
-        stickerNode.remove();
-        STATIC_SERVER_DB.stickers = STATIC_SERVER_DB.stickers.filter(s => s.id !== st.id);
-        commitToDatabase();
-      };
-
-      // 드래그 앤 드롭 인프라 연동 구현
-      bindStickerDragAndResize(stickerNode, st);
-    }
-
-    // 개별 스티커의 마우스 드래그 및 우측하단 크기조절 핸들 연동 연산 함수
-    function bindStickerDragAndResize(node, stObj) {
-      let isDragging = false;
-      let isResizing = false;
-      let startX, startY, startWidth, startHeight, startLeft, startTop;
-
-      node.addEventListener('mousedown', function(e) {
-        if (e.target.classList.contains('sticker-resizer-handle')) {
-          isResizing = true;
-          startX = e.clientX;
-          startY = e.clientY;
-          startWidth = node.offsetWidth;
-          startHeight = node.offsetHeight;
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-
-        isDragging = true;
-        startX = e.clientX - node.offsetLeft;
-        startY = e.clientY - node.offsetTop;
-        
-        // 클릭 시 우선 상단 계층 정렬
-        topZIndex++;
-        node.style.zIndex = topZIndex;
-        e.preventDefault();
-      });
-
-      document.addEventListener('mousemove', function(e) {
-        if (isDragging) {
-          let targetLeft = e.clientX - startX;
-          let targetTop = e.clientY - startY;
-
-          // 보드 경계 구역 내 가두기 유효성 연산
-          const board = document.getElementById('stickerCanvasArea');
-          if (targetLeft < 0) targetLeft = 0;
-          if (targetTop < 0) targetTop = 0;
-          if (targetLeft > board.offsetWidth - 30) targetLeft = board.offsetWidth - 30;
-          if (targetTop > board.offsetHeight - 30) targetTop = board.offsetHeight - 30;
-
-          node.style.left = targetLeft + "px";
-          node.style.top = targetTop + "px";
-
-          // 실시간 좌표 인프라 캐시 저장
-          const liveTarget = STATIC_SERVER_DB.stickers.find(s => s.id === stObj.id);
-          if (liveTarget) {
-            liveTarget.left = targetLeft;
-            liveTarget.top = targetTop;
-          }
-        } 
-        else if (isResizing) {
-          let deltaX = e.clientX - startX;
-          let deltaY = e.clientY - startY;
-          let currentW = startWidth + deltaX;
-          let currentH = startHeight + deltaY;
-
-          if (currentW < 30) currentW = 30;
-          if (currentH < 30) currentH = 30;
-          if (currentW > 300) currentW = 300;
-
-          node.style.width = currentW + "px";
-          node.style.height = currentH + "px";
-
-          const liveTarget = STATIC_SERVER_DB.stickers.find(s => s.id === stObj.id);
-          if (liveTarget) {
-            liveTarget.width = currentW;
-            liveTarget.height = currentH;
-          }
-        }
-      });
-
-      document.addEventListener('mouseup', function() {
-        if (isDragging || isResizing) {
-          isDragging = false;
-          isResizing = false;
-          commitToDatabase(); // 마우스를 뗄 때 데이터 영구 보존 완료 처리
-        }
-      });
-    }
-
-
-    /* ==========================================
-       8. 시스템 시계 실시간 피드 구동
-       ========================================== */
-    function updateLiveClock() {
-      const now = new Date();
-      let hours = now.getHours();
-      let minutes = now.getMinutes();
-      let seconds = now.getSeconds();
-
-      hours = hours < 10 ? '0' + hours : hours;
-      minutes = minutes < 10 ? '0' + minutes : minutes;
-      seconds = seconds < 10 ? '0' + seconds : seconds;
-
-      document.getElementById('liveClock').innerText = `${hours}:${minutes}:${seconds}`;
-    }
-    setInterval(updateLiveClock, 1000);
-    updateLiveClock();
-
-
-    /* ==========================================
-       9. 초기 시스템 실행 부팅 및 마운트 
-       ========================================== */
-    function initSystemBoot() {
-      syncUiProfileView();
-      updateSystemCounters();
-      renderAllStickersFromDb();
-      
-      // 초기 상태에서 바탕화면을 깔끔히 보이도록 유도
-      console.log("Orange Space OS v2 로딩 완료. 정상 가동 중.");
-    }
-    window.onload = initSystemBoot;
-
-  </script>
+    updateProfileUI(); updateDDayWidget(); renderNotepadTabs(); renderTodoList(); renderFinderGrid(); dumpCurrentDB();
+    initSnowEffect(); // ❄️ 백그라운드 스노우 이펙트 전격 가동
+  }
+
+  window.addEventListener('DOMContentLoaded', initOS);
+})();
+</script>
 </body>
 </html>
