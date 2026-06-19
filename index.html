@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My macOS Space</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-color: #e2e8f0;
+  --window-bg: rgba(255, 255, 255, 0.85);
+  --window-border: rgba(0, 0, 0, 0.15);
+  --text-color: #1e293b;
+  --accent-color: #007aff;
+  --sidebar-bg: rgba(241, 245, 249, 0.9);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--text-color);
+  height: 100vh;
+  overflow: hidden;
+  background: radial-gradient(circle, #fbcfe8 0%, #cbd5e1 100%);
+  user-select: none;
+}
+
+#desktop {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  padding-bottom: 50px;
+}
+
+/* 맥 스타일 상단 메뉴바 */
+#top-menubar {
+  height: 28px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 9999;
+  position: relative;
+}
+#top-menubar .left-menu { display: flex; gap: 16px; }
+#top-menubar .left-menu .apple-logo { font-weight: 700; cursor: pointer; }
+#top-menubar .right-menu { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+
+/* 바탕화면 아이콘 */
+#desktop-icons {
+  position: absolute;
+  top: 44px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 10;
+}
+.dicon {
+  width: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+}
+.dicon:hover { background: rgba(255, 255, 255, 0.2); }
+.dicon-icon {
+  width: 48px;
+  height: 48px;
+  background: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+.dicon-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1e293b;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.6);
+  text-align: center;
+  word-break: keep-all;
+}
+
+/* 맥 스타일 윈도우 기본 */
+.window {
+  position: absolute;
+  display: none;
+  flex-direction: column;
+  background: var(--window-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--window-border);
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  z-index: 100;
+  overflow: hidden;
+  resize: both;
+  min-width: 300px;
+  min-height: 200px;
+}
+.window.open { display: flex; }
+
+/* 맥 신호등 버튼 & 타이틀바 */
+.win-header {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background: rgba(241, 245, 249, 0.6);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+}
+.win-header:active { cursor: grabbing; }
+.mac-buttons { display: flex; gap: 8px; margin-right: 16px; }
+.mac-btn { width: 12px; height: 12px; border-radius: 50%; border: none; cursor: pointer; }
+.mac-close { background: #ff5f56; }
+.mac-min { background: #ffbd2e; }
+.mac-max { background: #27c93f; }
+.win-title { font-size: 14px; font-weight: 600; color: #475569; margin-right: auto; }
+
+/* 내 PC 내부 레이아웃 */
+.win-container { display: flex; flex: 1; height: calc(100% - 42px); overflow: hidden; }
+.sidebar {
+  width: 160px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid rgba(0,0,0,0.06);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; padding: 4px 8px; margin-top: 8px; }
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.sidebar-item:hover { background: rgba(0,0,0,0.04); }
+.sidebar-item.active { background: var(--accent-color); color: white; }
+
+.main-content { flex: 1; display: flex; flex-direction: column; background: white; overflow: hidden; }
+
+/* 4대 정렬 모드용 상단 툴바 */
+.view-toolbar {
+  height: 38px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 6px;
+  background: #f8fafc;
+}
+.view-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.view-btn.active { background: #e2e8f0; font-weight: 600; border-color: #94a3b8; }
+
+.content-body { flex: 1; padding: 16px; overflow-y: auto; }
+
+/* 정렬 방식 스타일들 */
+.grid-layout-1 { display: flex; flex-direction: column; gap: 10px; }
+.item-card-1 { display: flex; align-items: center; gap: 14px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; }
+.item-card-1 img { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
+.item-info-1 { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.item-info-1 .item-meta { font-size: 11px; color: #64748b; }
+
+.grid-layout-2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.item-card-2 { aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 1px solid #e2e8f0; }
+.item-card-2 img { width: 100%; height: 100%; object-fit: cover; }
+
+.grid-layout-3 { display: flex; flex-direction: column; }
+.item-card-3 { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; cursor: pointer; }
+.item-card-3:hover { background: #f8fafc; }
+.item-card-3 .item-date { color: #64748b; font-size: 12px; }
+
+.grid-layout-4 { display: flex; flex-direction: column; }
+.item-card-4 { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; cursor: pointer; gap: 10px; }
+.item-card-4:hover { background: #f8fafc; }
+.item-card-4 .left-part { display: flex; align-items: center; gap: 8px; }
+.item-card-4 img { width: 24px; height: 24px; object-fit: cover; border-radius: 4px; }
+.item-card-4 .item-date { color: #64748b; font-size: 12px; }
+
+/* 블로그형 상세 보기 창 */
+.blog-view { display: flex; flex-direction: column; gap: 12px; user-select: text; }
+.blog-title { font-size: 20px; font-weight: 700; color: #0f172a; }
+.blog-date { font-size: 12px; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+.blog-img { width: 100%; max-height: 300px; object-fit: contain; background: #f8fafc; border-radius: 8px; }
+.blog-text { font-size: 14px; line-height: 1.6; color: #334155; white-space: pre-wrap; margin-top: 8px; }
+
+/* MS 메모장 기능 */
+.notepad-container { display: flex; flex-direction: column; height: 100%; background: white; }
+.notepad-textarea { flex: 1; border: none; outline: none; padding: 12px; font-family: monospace; font-size: 14px; resize: none; }
+.notepad-statusbar { height: 22px; border-top: 1px solid #e2e8f0; background: #f1f5f9; display: flex; align-items: center; justify-content: flex-end; padding: 0 12px; font-size: 11px; color: #64748b; }
+
+/* 방명록 내부 디자인 */
+.guestbook-container { display: flex; flex-direction: column; gap: 12px; height: 100%; }
+.gb-form { display: flex; flex-direction: column; gap: 6px; }
+.gb-input { width: 100%; height: 60px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; resize: none; font-size: 13px; }
+.gb-btn { align-self: flex-end; padding: 4px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
+.gb-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.gb-item { padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; white-space: pre-wrap; }
+
+/* 우측 위젯 및 레이아웃 */
+#widget-sidebar {
+  position: absolute;
+  top: 44px;
+  right: 20px;
+  width: 240px;
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 50;
+}
+#widget-sidebar.open { display: flex; }
+.widget-box {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  resize: vertical;
+  overflow: auto;
+  min-height: 80px;
+}
+.widget-title { font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
+
+/* 타이머 위젯 내부 */
+.timer-display { font-size: 28px; font-weight: 700; text-align: center; margin: 4px 0; font-variant-numeric: tabular-nums; }
+.timer-controls { display: flex; gap: 4px; justify-content: center; }
+.timer-controls button { padding: 2px 8px; font-size: 11px; background: white; border: 1px solid #cbd5e1; border-radius: 4px; cursor: pointer; }
+
+/* 할 일 위젯 내부 */
+.todo-list-widget { display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto; font-size: 12px; }
+.todo-item-widget { display: flex; align-items: center; gap: 6px; }
+
+/* 디데이 내부 */
+.dday-widget-content { font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+.dday-row { display: flex; justify-content: space-between; font-weight: 500; }
+
+/* 하단 독(Dock) 및 인디케이터 */
+#bottom-dock {
+  position: fixed;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
+  padding: 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.3);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  z-index: 9990;
+}
+.dock-item { width: 44px; height: 44px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; }
+.dock-item:hover { transform: scale(1.15); }
+.dock-dday-indicator { position: absolute; top: -6px; right: -6px; background: #ff3b30; color: white; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 8px; }
+
+/* 스커 및 꾸미기 레이어 */
+#sticker-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.sticker { position: absolute; pointer-events: auto; cursor: move; font-size: 44px; line-height: 1; user-select: none; z-index: 5; }
+.sticker .del-btn { position: absolute; top: -10px; right: -10px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; display: none; align-items: center; justify-content: center; cursor: pointer; }
+.sticker:hover .del-btn { display: flex; }
+
+.emoji-palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; font-size: 24px; text-align: center; }
+.emoji-item { cursor: pointer; padding: 4px; border-radius: 6px; }
+.emoji-item:hover { background: rgba(0,0,0,0.05); }
+
+/* 포인터 캡처용 유틸 */
+.noclick { pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div id="top-menubar">
+  <div class="left-menu">
+    <span class="apple-logo" id="mac-start-toggle"></span>
+    <span style="font-weight:700;">Finder</span>
+    <span>이동</span>
+    <span>윈도우</span>
+  </div>
+  <div class="right-menu">
+    <span id="top-dday-bar" style="font-weight:600; color:#ff3b30; font-size:12px;"></span>
+    <span id="top-clock">00:00</span>
+  </div>
+</div>
+
+<div id="desktop">
+  <div id="sticker-layer"></div>
+
+  <div id="desktop-icons">
+    <div class="dicon" data-win="win-pc"><div class="dicon-icon">🖥️</div><div class="dicon-label">내 PC</div></div>
+    <div class="dicon" data-win="win-documents"><div class="dicon-icon">📄</div><div class="dicon-label">내 문서</div></div>
+    <div class="dicon" data-win="win-photos"><div class="dicon-icon">🖼️</div><div class="dicon-label">내 사진</div></div>
+    <div class="dicon" data-win="win-decorator"><div class="dicon-icon">🎨</div><div class="dicon-label">꾸미기</div></div>
+  </div>
+
+  <div class="window" id="win-pc" style="left:220px; top:80px; width:640px; height:420px;">
+    <div class="win-header">
+      <div class="mac-buttons">
+        <button class="mac-btn mac-close" data-close="win-pc"></button>
+        <button class="mac-btn mac-min"></button>
+        <button class="mac-btn mac-max"></button>
+      </div>
+      <span class="win-title">🖥️ 내 PC</span>
+    </div>
+    <div class="win-container">
+      <div class="sidebar">
+        <div class="sidebar-title">위치</div>
+        <div class="sidebar-item active" data-cate="c">💽 로컬 디스크 (C:)</div>
+        <div class="sidebar-item" data-cate="d">💽 로컬 디스크 (D:)</div>
+        <div class="sidebar-title">즐겨찾기</div>
+        <div class="sidebar-item" data-cate="fav">⭐ 즐겨찾기 항목</div>
+        <div class="sidebar-title">소통</div>
+        <div class="sidebar-item" data-cate="gb">📝 방명록</div>
+      </div>
+      <div class="main-content">
+        <div class="view-toolbar" id="pc-toolbar">
+          <button class="view-btn active" data-view="1">📋 상세 보기</button>
+          <button class="view-btn" data-view="2">⣿ 바둑판</button>
+          <button class="view-btn" data-view="3">☰ 텍스트</button>
+          <button class="view-btn" data-view="4">🪵 간단 요약</button>
+        </div>
+        <div class="content-body" id="pc-content-body">
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="window" id="win-blog-detail" style="left:300px; top:120px; width:480px; height:450px;">
+    <div class="win-header">
+      <div class="mac-buttons">
+        <button class="mac-btn mac-close" data-close="win-blog-detail"></button>
+        <button class="mac-btn mac-min"></button>
+        <button class="mac-btn mac-max"></button>
+      </div>
+      <span class="win-title">📖 포스트 보기</span>
+    </div>
+    <div class="content-body" style="background:white;" id="blog-detail-body">
+      </div>
+  </div>
+
+  <div class="window" id="win-documents" style="left:120px; top:280px; width:380px; height:320px;">
+    <div class="win-header">
+      <div class="mac-buttons">
+        <button class="mac-btn mac-close" data-close="win-documents"></button>
+        <button class="mac-btn mac-min"></button>
+        <button class="mac-btn mac-max"></button>
+      </div>
+      <span class="win-title">📄 내 문서 - 메모장</span>
+    </div>
+    <div class="notepad-container">
+      <textarea class="notepad-textarea" id="notepad-core" placeholder="여기에 메모를 입력하세요..."></textarea>
+      <div class="notepad-statusbar" id="notepad-status">글자 수: 0 (공백 제외: 0)</div>
+    </div>
+  </div>
+
+  <div class="window" id="win-photos" style="left:400px; top:200px; width:420px; height:360px;">
+    <div class="win-header">
+      <div class="mac-buttons">
+        <button class="mac-btn mac-close" data-close="win-photos"></button>
+        <button class="mac-btn mac-min"></button>
+        <button class="mac-btn mac-max"></button>
+      </div>
+      <span class="win-title">🖼️ 모든 사진 모아보기</span>
+    </div>
+    <div class="content-body" style="background:white;">
+      <div class="grid-layout-2" id="all-photos-gallery">
+        </div>
+    </div>
+  </div>
+
+  <div class="window" id="win-decorator" style="left:140px; top:120px; width:260px; height:320px;">
+    <div class="win-header">
+      <div class="mac-buttons">
+        <button class="mac-btn mac-close" data-close="win-decorator"></button>
+        <button class="mac-btn mac-min"></button>
+        <button class="mac-btn mac-max"></button>
+      </div>
+      <span class="win-title">🎨 이모티콘 스티커</span>
+    </div>
+    <div class="content-body" style="background:#f8fafc;">
+      <div class="emoji-palette-grid" id="emoji-palette">
+        </div>
+    </div>
+  </div>
+
+  <div id="widget-sidebar">
+    <div class="widget-box" id="widget-dday">
+      <div class="widget-title">📅 디데이 카운터</div>
+      <div class="dday-widget-content" id="wd-dday-area"></div>
+    </div>
+    <div class="widget-box" id="widget-todo">
+      <div class="widget-title">✅ 오늘의 할 일</div>
+      <div class="todo-list-widget" id="wd-todo-area"></div>
+    </div>
+    <div class="widget-box" id="widget-timer">
+      <div class="widget-title">⏱️ 생산성 타이머</div>
+      <div class="timer-display" id="wd-timer-clock">25:00</div>
+      <div class="timer-controls">
+        <button id="wbtn-timer-start">시작</button>
+        <button id="wbtn-timer-pause">정지</button>
+        <button id="wbtn-timer-reset">리셋</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="bottom-dock">
+  <div class="dock-item" data-win="win-pc">🖥️</div>
+  <div class="dock-item" data-win="win-documents">📄</div>
+  <div class="dock-item" data-win="win-photos">🖼️</div>
+  <div class="dock-item" data-win="win-decorator">🎨</div>
+  <div class="dock-item" id="dock-dday-icon" style="background:#fff5f5;">
+    📅
+    <div class="dock-dday-indicator" id="dock-dday-text">D-0</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* =================================================================
+     ⭐ [주인 데이터 고정 설정 구역] ⭐
+     내 PC 내부에 들어갈 항목과 텍스트를 마음껏 수정할 수 있는 영역입니다.
+     ================================================================= */
+  var FILE_DATABASE = {
+    // 로컬 디스크 (C:)에 배치할 사진 데이터 목록
+    c: [
+      { id: 'c1', title: '봄날의 산책', name: 'spring_walk.png', loc: '로컬 디스크 (C:)', date: '2026-04-12', src: 'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=500', text: '날씨가 너무 좋아서 근처 공원으로 산책을 다녀왔다. 흩날리는 벚꽃 아래서 마신 차 한잔의 여유가 가득했던 하루.' },
+      { id: 'c2', title: '나의 아늑한 작업실', name: 'my_desk_setup.jpg', loc: '로컬 디스크 (C:)', date: '2026-05-02', src: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500', text: '새로 장만한 키보드와 아기자기한 소품들로 데스크 테리어를 바꿨다. 여기서 코딩하면 집중이 백 배는 잘 되는 기분!' }
+    ],
+    // 로컬 디스크 (D:)에 배치할 사진 데이터 목록
+    d: [
+      { id: 'd1', title: '달콤한 디저트 카페', name: 'sweet_pudding.png', loc: '로컬 디스크 (D:)', date: '2026-05-20', src: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500', text: '인스타에서 핫하다는 카페에 찾아가 푸딩과 크림소다를 주문했다. 달달한 맛이 입안 가득 맴돌아서 스트레스가 싹 날아감 🍓' }
+    ],
+    // 즐겨찾기 항목에 배치할 사진 데이터 목록
+    fav: [
+      { id: 'f1', title: '환상의 야경 여행', name: 'tokyo_night.jpg', loc: '즐겨찾기 항목', date: '2026-01-15', src: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=500', text: '작년 겨울 떠났던 도쿄의 화려한 도심 야경 컷. 다시 봐도 가슴이 웅장해지는 반짝임이다. 조만간 또 여행을 떠나고 싶다.' }
+    ],
+    // 고정 디데이 설정
+    dday: { title: '블로그 리뉴얼', date: '2026-07-24' },
+    // 고정 할 일 목록
+    todos: [
+      { text: '맥 스타일 테마 코드 다듬기', done: true },
+      { text: '방명록 새 글 확인하고 답글 달기', done: false },
+      { text: '스마트폰으로 레이아웃 최적화 점검', done: false }
+    ]
+  };
+  /* ================================================================= */
+
+  // 상태 관리 객체 (방문자 기록 및 커스텀 창 위치 데이터 로컬 스토리지 보존)
+  var state = {
+    currentCategory: 'c',
+    currentViewMode: '1',
+    visitorMemos: [],
+    stickers: [],
+    windowPositions: {}
+  };
+
+  var zTopIndex = 200;
+
+  // 로컬스토리지 입출력 브라우저 보존 최적화
+  function saveStorage(key, val){
+    try { localStorage.setItem('mac_' + key, JSON.stringify(val)); } catch(e){}
+  }
+  function loadStorage(key){
+    try { var v = localStorage.getItem('mac_' + key); return v ? JSON.parse(v) : null; } catch(e){ return null; }
+  }
+
+  // 요소 단축 함수
+  function select(q){ return document.querySelector(q); }
+
+  /* ---------- 창 드래그 및 리사이즈 데이터 영구 유지 장치 ---------- */
+  function setWindowFocus(win){
+    zTopIndex += 2;
+    win.style.zIndex = zTopIndex;
+  }
+
+  function registerWinEvents(win){
+    var header = win.querySelector('.win-header');
+    if(!header) return;
+
+    var isDragging = false, startX=0, startY=0, originalLeft=0, originalTop=0;
+
+    header.addEventListener('pointerdown', function(e){
+      if(e.target.classList.contains('mac-btn')) return;
+      isDragging = true;
+      setWindowFocus(win);
+      startX = e.clientX;
+      startY = e.clientY;
+      var rect = win.getBoundingClientRect();
+      originalLeft = rect.left;
+      originalTop = rect.top;
+      try { header.setPointerCapture(e.pointerId); } catch(_){}
+    });
+
+    header.addEventListener('pointermove', function(e){
+      if(!isDragging) return;
+      var dx = e.clientX - startX;
+      var dy = e.clientY - startY;
+      win.style.left = (originalLeft + dx) + 'px';
+      win.style.top = (originalTop + dy) + 'px';
+    });
+
+    var endDrag = function(){
+      if(isDragging) {
+        isDragging = false;
+        trackWindowBounds(win);
+      }
+    };
+    header.addEventListener('pointerup', endDrag);
+    header.addEventListener('pointercancel', endDrag);
+
+    win.addEventListener('pointerdown', function(){ setWindowFocus(win); });
+    win.addEventListener('mouseup', function(){ trackWindowBounds(win); });
+  }
+
+  function trackWindowBounds(win){
+    state.windowPositions[win.id] = {
+      left: win.style.left,
+      top: win.style.top,
+      width: win.style.width,
+      height: win.style.height
+    };
+    saveStorage('windowPositions', state.windowPositions);
+  }
+
+  document.querySelectorAll('.window').forEach(function(win){
+    registerWinEvents(win);
+  });
+
+  // 창 여닫기 제어
+  function showWindow(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.classList.add('open');
+    setWindowFocus(el);
+  }
+  function hideWindow(id){
+    var el = document.getElementById(id);
+    if(el) el.classList.remove('open');
+  }
+
+  document.querySelectorAll('[data-win]').forEach(function(btn){
+    btn.addEventListener('click', function(){ showWindow(btn.dataset.win); });
+    btn.addEventListener('dblclick', function(){ showWindow(btn.dataset.win); });
+  });
+  document.querySelectorAll('[data-close]').forEach(function(btn){
+    btn.addEventListener('click', function(){ hideWindow(btn.dataset.close); });
+  });
+
+  /* ---------- 시계 기능 ---------- */
+  function updateSystemClock(){
+    var now = new Date();
+    var hh = String(now.getHours()).padStart(2, '0');
+    var mm = String(now.getMinutes()).padStart(2, '0');
+    select('#top-clock').textContent = hh + ':' + mm;
+  }
+  setInterval(updateSystemClock, 5000); updateSystemClock();
+
+  /* ---------- 디데이 연동 계산기 ---------- */
+  function calculateDDay(){
+    var targetStr = FILE_DATABASE.dday.date;
+    var target = new Date(targetStr); target.setHours(0,0,0,0);
+    var today = new Date(); today.setHours(0,0,0,0);
+    var gap = Math.round((target - today) / 86400000);
+    
+    var output = '';
+    if(gap === 0) output = 'D-DAY';
+    else if(gap > 0) output = 'D-' + gap;
+    else output = 'D+' + Math.abs(gap);
+
+    // 메뉴바, 위젯, 하단 인디케이터 동시 연동
+    select('#top-dday-bar').textContent = FILE_DATABASE.dday.title + ' ' + output;
+    select('#dock-dday-text').textContent = output;
+    select('#wd-dday-area').innerHTML = `
+      <div class="dday-row">
+        <span>${FILE_DATABASE.dday.title}</span>
+        <span style="color:#ff3b30;">${output}</span>
+      </div>
+      <div style="font-size:11px; color:#64748b; margin-top:4px; text-align:right;">목표일: ${targetStr}</div>
+    `;
+  }
+
+  /* ---------- 할 일 위젯 ---------- */
+  function renderTodoWidget(){
+    var container = select('#wd-todo-area');
+    container.innerHTML = '';
+    FILE_DATABASE.todos.forEach(function(todo){
+      var div = document.createElement('div');
+      div.className = 'todo-item-widget';
+      div.innerHTML = `
+        <input type="checkbox" ${todo.done ? 'checked' : ''} disabled>
+        <span style="${todo.done ? 'text-decoration: line-through; color:#94a3b8;' : ''}">${todo.text}</span>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  /* ---------- 생산성 타이머 위젯 ---------- */
+  var timerSeconds = 1500, timerId = null;
+  function updateTimerUI(){
+    var m = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+    var s = String(timerSeconds % 60).padStart(2, '0');
+    select('#wd-timer-clock').textContent = m + ':' + s;
+  }
+  select('#wbtn-timer-start').addEventListener('click', function(){
+    if(timerId) return;
+    timerId = setInterval(function(){
+      if(timerSeconds > 0) { timerSeconds--; updateTimerUI(); }
+      else { clearInterval(timerId); timerId = null; alert('타이머가 종료되었습니다!'); }
+    }, 1000);
+  });
+  select('#wbtn-timer-pause').addEventListener('click', function(){
+    clearInterval(timerId); timerId = null;
+  });
+  select('#wbtn-timer-reset').addEventListener('click', function(){
+    clearInterval(timerId); timerId = null; timerSeconds = 1500; updateTimerUI();
+  });
+
+  /* ---------- 시작 버튼 (애플 로고 클릭 시 위젯 토글) ---------- */
+  select('#mac-start-toggle').addEventListener('click', function(){
+    select('#widget-sidebar').classList.toggle('open');
+  });
+
+  /* ---------- MS 메모장 기능 (실시간 글자수 계산) ---------- */
+  var notepadArea = select('#notepad-core');
+  notepadArea.addEventListener('input', function(){
+    var text = notepadArea.value;
+    var lenAll = text.length;
+    var lenNoSpace = text.replace(/\s/g, '').length;
+    select('#notepad-status').textContent = `글자 수: ${lenAll} (공백 제외: ${lenNoSpace})`;
+  });
+
+  /* ---------- 내 사진 (통합 갤러리 3열) ---------- */
+  function renderAllPhotosGallery(){
+    var container = select('#all-photos-gallery');
+    container.innerHTML = '';
+    var combined = [].concat(FILE_DATABASE.c, FILE_DATABASE.d, FILE_DATABASE.fav);
+    combined.forEach(function(item){
+      var card = document.createElement('div');
+      card.className = 'item-card-2';
+      card.innerHTML = `<img src="${item.src}">`;
+      card.addEventListener('click', function(){ openBlogPost(item); });
+      container.appendChild(card);
+    });
+  }
+
+  /* ---------- 블로그 상세 포스트 뷰어 ---------- */
+  function openBlogPost(item){
+    var body = select('#blog-detail-body');
+    body.innerHTML = `
+      <div class="blog-view">
+        <div class="blog-title">${item.title}</div>
+        <div class="blog-date">저장일자: ${item.date} | 위치: ${item.loc}</div>
+        <img class="blog-img" src="${item.src}">
+        <div class="blog-text">${item.text}</div>
+      </div>
+    `;
+    showWindow('win-blog-detail');
+  }
+
+  /* ---------- 내 PC 메인 탐색기 기능 (4대 정렬 모드 완벽 탑재) ---------- */
+  function renderPcContent(){
+    var body = select('#pc-content-body');
+    body.innerHTML = '';
+    var cate = state.currentCategory;
+    var mode = state.currentViewMode;
+
+    if(cate === 'gb') {
+      // 방명록 스페셜 뷰 연출
+      select('#pc-toolbar').style.display = 'none';
+      body.innerHTML = `
+        <div class="guestbook-container">
+          <div class="gb-form">
+            <textarea class="gb-input" id="gb-textarea-field" placeholder="따뜻한 한마디 방명록을 적어주세요..."></textarea>
+            <button class="gb-btn" id="gb-submit-btn">방명록 등록</button>
+          </div>
+          <div class="gb-list" id="gb-list-target"></div>
+        </div>
+      `;
+      renderGuestbookItems();
+      return;
+    }
+
+    select('#pc-toolbar').style.display = 'flex';
+    var dataList = FILE_DATABASE[cate] || [];
+
+    var wrapper = document.createElement('div');
+    wrapper.className = 'grid-layout-' + mode;
+
+    dataList.forEach(function(item){
+      var html = '';
+      if(mode === '1') {
+        html = `
+          <div class="item-card-1">
+            <img src="${item.src}">
+            <div class="item-info-1">
+              <div style="font-weight:600;">${item.title}</div>
+              <div class="item-meta">파일명: ${item.name}</div>
+              <div class="item-meta">위치: ${item.loc} | 날짜: ${item.date}</div>
+            </div>
+          </div>
+        `;
+      } else if(mode === '2') {
+        html = `
+          <div class="item-card-2">
+            <img src="${item.src}">
+          </div>
+        `;
+      } else if(mode === '3') {
+        html = `
+          <div class="item-card-3">
+            <div style="font-weight:500;">📂 ${item.name}</div>
+            <div class="item-date">${item.date}</div>
+          </div>
+        `;
+      } else if(mode === '4') {
+        html = `
+          <div class="item-card-4">
+            <div class="left-part">
+              <img src="${item.src}">
+              <span style="font-weight:500;">${item.name}</span>
+            </div>
+            <div class="item-date">${item.date}</div>
+          </div>
+        `;
+      }
+      
+      var itemEl = document.createElement('div');
+      itemEl.innerHTML = html.trim();
+      var coreNode = itemEl.firstChild;
+      coreNode.addEventListener('click', function(){ openBlogPost(item); });
+      wrapper.appendChild(coreNode);
+    });
+
+    body.appendChild(wrapper);
+  }
+
+  // 방명록 입력 및 랜더링 실시간 제어
+  function renderGuestbookItems(){
+    var target = select('#gb-list-target');
+    if(!target) return;
+    target.innerHTML = '';
+    state.visitorMemos.forEach(function(m){
+      var item = document.createElement('div');
+      item.className = 'gb-item';
+      item.textContent = m.text;
+      target.appendChild(item);
+    });
+
+    var btn = select('#gb-submit-btn');
+    var txt = select('#gb-textarea-field');
+    if(btn && txt){
+      btn.addEventListener('click', function(){
+        var msg = txt.value.trim();
+        if(!msg) return;
+        state.visitorMemos.unshift({ text: msg });
+        txt.value = '';
+        saveStorage('visitorMemos', state.visitorMemos);
+        renderGuestbookItems();
+      });
+    }
+  }
+
+  // 사이드바 카테고리 스위칭 이벤트 리스너
+  document.querySelectorAll('#win-pc .sidebar-item').forEach(function(item){
+    item.addEventListener('click', function(){
+      document.querySelectorAll('#win-pc .sidebar-item').forEach(function(i){ i.classList.remove('active'); });
+      item.classList.add('active');
+      state.currentCategory = item.dataset.cate;
+      renderPcContent();
+    });
+  });
+
+  // 정렬 모드 버튼 변경 이벤트 리스너
+  document.querySelectorAll('#pc-toolbar .view-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('#pc-toolbar .view-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      state.currentViewMode = btn.dataset.view;
+      renderPcContent();
+    });
+  });
+
+  /* ---------- 아이폰 기본 이모티콘 꾸미기 스티커 팩 ---------- */
+  var iphoneEmojis = [
+    '🐱','🐰','🐻','🦊','🍓','🍒','🍑','🍇','🌸','🌱','🎈','🎀','🧸','🎀','🪄',
+    '❤️','🔥','✨','🌟','☁️','🍋','🥞','🍮','🍩','🥤','🎧','🎨','📸','💌','📍'
+  ];
+  function initStickerPalette(){
+    var palette = select('#emoji-palette');
+    palette.innerHTML = '';
+    iphoneEmojis.forEach(function(em){
+      var span = document.createElement('div');
+      span.className = 'emoji-item';
+      span.textContent = em;
+      span.addEventListener('click', function(){ createStickerObject(em, 150, 150); });
+      palette.appendChild(span);
+    });
+  }
+
+  function createStickerObject(em, x, y, isLoaded){
+    var id = 'st_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+    var stickerObj = { id: id, emoji: em, x: x, y: y };
+    if(!isLoaded) {
+      state.stickers.push(stickerObj);
+      saveStorage('stickers', state.stickers);
+    }
+    renderStickerElement(stickerObj);
+  }
+
+  function renderStickerElement(obj){
+    var div = document.createElement('div');
+    div.className = 'sticker';
+    div.id = obj.id;
+    div.style.left = obj.x + 'px';
+    div.style.top = obj.y + 'px';
+    div.innerHTML = `${obj.emoji}<button class="del-btn">×</button>`;
+
+    div.querySelector('.del-btn').addEventListener('click', function(e){
+      e.stopPropagation();
+      state.stickers = state.stickers.filter(function(s){ return s.id !== obj.id; });
+      saveStorage('stickers', state.stickers);
+      div.remove();
+    });
+
+    // 드래그 앤 드롭 이동 장치 구축
+    var activeDrag = false, sx = 0, sy = 0, ol = 0, ot = 0;
+    div.addEventListener('pointerdown', function(e){
+      if(e.target.classList.contains('del-btn')) return;
+      activeDrag = true;
+      sx = e.clientX; sy = e.clientY;
+      ol = parseInt(div.style.left);
+      ot = parseInt(div.style.top);
+      div.classList.add('noclick');
+      try { div.setPointerCapture(e.pointerId); } catch(_){}
+    });
+    div.addEventListener('pointermove', function(e){
+      if(!activeDrag) return;
+      var dx = e.clientX - sx;
+      var dy = e.clientY - sy;
+      obj.x = ol + dx;
+      obj.y = ot + dy;
+      div.style.left = obj.x + 'px';
+      div.style.top = obj.y + 'px';
+    });
+    var stopStickerDrag = function(){
+      if(activeDrag){
+        activeDrag = false;
+        div.classList.remove('noclick');
+        saveStorage('stickers', state.stickers);
+      }
+    };
+    div.addEventListener('pointerup', stopStickerDrag);
+    div.addEventListener('pointercancel', stopStickerDrag);
+
+    select('#sticker-layer').appendChild(div);
+  }
+
+  /* ---------- 빌드 초기화 로더 ---------- */
+  function initializeSpace(){
+    calculateDDay();
+    renderTodoWidget();
+    initStickerPalette();
+    renderAllPhotosGallery();
+    renderPcContent();
+
+    // 저장 기록 역참조 복구
+    var savedMemos = loadStorage('visitorMemos');
+    if(savedMemos) { state.visitorMemos = savedMemos; renderGuestbookItems(); }
+
+    var savedPositions = loadStorage('windowPositions');
+    if(savedPositions) {
+      state.windowPositions = savedPositions;
+      Object.keys(savedPositions).forEach(function(id){
+        var win = document.getElementById(id);
+        var styleData = savedPositions[id];
+        if(win && styleData){
+          if(styleData.left) win.style.left = styleData.left;
+          if(styleData.top) win.style.top = styleData.top;
+          if(styleData.width) win.style.width = styleData.width;
+          if(styleData.height) win.style.height = styleData.height;
+        }
+      });
+    }
+
+    var savedStickers = loadStorage('stickers');
+    if(savedStickers && savedStickers.length) {
+      state.stickers = [];
+      savedStickers.forEach(function(s){
+        createStickerObject(s.emoji, s.x, s.y, true);
+        state.stickers.push(s);
+      });
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', initializeSpace);
+
+})();
+</script>
+</body>
+</html>
