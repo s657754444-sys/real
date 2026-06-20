@@ -3,7 +3,7 @@
 <head> 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>한화이글스 더그아웃</title>
+<title>한화이글스 더그아웃 V2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 
@@ -26,41 +26,12 @@
   --radius-md: 8px;
   --radius-sm: 4px;
 }
-body {
-  background: linear-gradient(to bottom, #ffffff 0%, var(--point-orange-mid) 100%) !important;
-  background-attachment: fixed;
-  min-height: 100vh;
-  margin: 0;
-}
-  
-/* --- 내PC 메인 사진 강제 고정 스타일 --- */
-.pc-main-container, 
-[id*="pc-main"], 
-[class*="pc-main"],
-.pc-screen,
-.main-screen,
-.main-pc-root-banner {
-  background-image: url('https://curly-lime-lghv1a47.edgeone.app/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7%202026-06-20%20010123.png') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-}
-
-.pc-main-container img,
-[id*="pc-main"] img,
-[class*="pc-main"] img,
-.pc-screen img,
-.main-screen img {
-  content: url('https://curly-lime-lghv1a47.edgeone.app/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7%202026-06-20%20010123.png') !important;
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-}
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: 'Noto Sans KR', sans-serif;
   color: var(--text-primary);
-  background-color: var(--bg-main);
+  background: linear-gradient(to bottom, #ffffff 0%, var(--point-orange-mid) 100%) !important;
+  background-attachment: fixed;
   height: 100vh;
   overflow: hidden;
   user-select: none;
@@ -130,12 +101,17 @@ body {
 .content-top-menu { height: 32px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--border-light); background: #fafafa; }
 .content-body { flex: 1; padding: 16px; overflow-y: auto; }
 
+/* --- [수정] 내 PC 메인 화면 배너 전용 고정 스타일 기획 --- */
 .main-pc-root-banner {
   width: 100%;
-  height: 180px;
+  height: 120px; /* 높이 최적화 조절 */
   border-radius: var(--radius-md);
   margin-bottom: 16px;
   border: 1px solid var(--border-medium);
+  background-image: url('https://curly-lime-lghv1a47.edgeone.app/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7%202026-06-20%20010123.png') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
 }
 
 .grid-layout-original { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px; }
@@ -505,16 +481,14 @@ body {
 // ==========================================================================
 // 1. 파이어베이스 초기화 및 인스턴스 설정
 // ==========================================================================
-// 보완하신 실제 파이어베이스 구성 객체를 사용하세요.
 const firebaseConfig = {
-  apiKey: "AIzaSyDkh0DYjhbCzBjFo0h62DgMxfFGiJQOUXQ",
-  authDomain: "dogout-2f613.firebaseapp.com",
-  databaseURL: "https://dogout-2f613-default-rtdb.firebaseio.com",
-  projectId: "dogout-2f613",
-  storageBucket: "dogout-2f613.firebasestorage.app",
-  messagingSenderId: "1039585332276",
-  appId: "1:1039585332276:web:7baeba5e97fab2a0204e61",
-  measurementId: "G-CZ83GH68Q9"
+  apiKey: "AIzaSy...",
+  authDomain: "PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://PROJECT_ID.firebaseio.com",
+  projectId: "PROJECT_ID",
+  storageBucket: "PROJECT_ID.appspot.com",
+  messagingSenderId: "...",
+  appId: "..."
 };
 
 if (!firebase.apps.length) {
@@ -522,40 +496,43 @@ if (!firebase.apps.length) {
 }
 const db = firebase.database();
 
-// 데이터베이스 전역 참조 경로 정의
 const dbRefMain      = db.ref("orange_os/posts");
 const dbRefDday      = db.ref("orange_os/dday_data");
 const dbRefMusic     = db.ref("orange_os/music_data");
 const dbRefTodos     = db.ref("orange_os/todos");
 const dbRefNotepad   = db.ref("orange_os/notepad_tabs");
 
+// 기본 디데이 설정 (DB에 데이터가 없을 때 복구용 기본값)
+const DEFAULT_BLANK_DB = {
+  title: "한화이글스 시즌 개막",
+  date: "2026-04-01"
+};
+
 // ==========================================================================
-// 2. 관리자 인증 시스템 (콘솔 로그인 및 비밀번호 체크)
+// 2. 관리자 인증 시스템 (비밀번호 2598 복구 및 UI 적용)
 // ==========================================================================
 let IS_ADMIN_MODE = false;
 
 function applyAdminUIRender() {
   const statusText = document.getElementById("admin-status-bar-text");
-  const addPostBtn = document.getElementById("admin-add-post-btn");
   const musicForm = document.getElementById("music-admin-art-wrapper");
   
   if (IS_ADMIN_MODE) {
     statusText.innerText = "[총괄 관리자 모드 활성]";
     statusText.style.color = "var(--point-orange-accent)";
-    if (addPostBtn) addPostBtn.style.display = "inline";
     if (musicForm) musicForm.style.display = "flex";
   } else {
     statusText.innerText = "[일반 유저 모드]";
     statusText.style.color = "var(--text-muted)";
-    if (addPostBtn) addPostBtn.style.display = "none";
     if (musicForm) musicForm.style.display = "none";
   }
+  // 게시글 리스트와 상단 버튼 영역 재렌더링
   renderContentListGrid(); 
 }
 
 window.connectAdmin = function(pwd) {
-  // 실제 비밀번호 조건 검증
-  if (pwd === "eagles00") {
+  // 관리자 비밀번호를 2598로 수정 및 확인
+  if (pwd === "2598") {
     IS_ADMIN_MODE = true;
     applyAdminUIRender();
     console.log("오렌지 OS: 최고 관리자 인증 승인 완료.");
@@ -645,7 +622,6 @@ function makeWindowDraggable(winEl) {
   header.onmousedown = function(e) {
     if (e.target.classList.contains("mac-btn")) return;
     topZIndex++;
-    winEl.style.zindex = topZIndex;
     winEl.style.zIndex = topZIndex;
     
     let shiftX = e.clientX - winEl.getBoundingClientRect().left;
@@ -735,7 +711,6 @@ document.querySelectorAll(".mac-max").forEach(b => {
   b.addEventListener("click", () => toggleMaximizeWindow(b.dataset.winid));
 });
 
-// 시작 메뉴 토글 제어
 const startBtn = document.getElementById("start-btn");
 const startMenu = document.getElementById("start-menu-window");
 startBtn.addEventListener("click", (e) => {
@@ -749,7 +724,7 @@ document.addEventListener("click", (e) => {
 });
 
 // ==========================================================================
-// 5. 내 사진 및 PC 탐색기 로직 (파이어베이스 실시간 동기화 연동)
+// 5. 내 사진 및 PC 탐색기 로직 (메인 화면 배너 고정 및 방명록 버튼 상시 노출)
 // ==========================================================================
 let currentCategoryFilter = "all";
 let globalPostsData = {};
@@ -767,7 +742,6 @@ const pathNamesMap = {
   "p_sub_gift": "C:\\내 PC\\내 사진\\cm"
 };
 
-// 파이어베이스 실시간 포스트 리스너 연동
 dbRefMain.on("value", (snapshot) => {
   globalPostsData = snapshot.val() || {};
   renderContentListGrid();
@@ -779,18 +753,25 @@ function renderContentListGrid() {
   container.innerHTML = "";
   
   const searchWord = document.getElementById("finder-search-input").value.toLowerCase().trim();
+  const addPostBtn = document.getElementById("admin-add-post-btn");
   
   document.getElementById("header-path-text").innerText = pathNamesMap[currentCategoryFilter] || "C:\\내 PC";
   document.getElementById("finder-tab-title").innerText = currentCategoryFilter === "all" ? "내 PC" : currentCategoryFilter;
 
-  // 루트 배너 배치 조건
-  if (currentCategoryFilter === "all" || currentCategoryFilter === "c" || currentCategoryFilter === "photos") {
+  // 상단 글쓰기 버튼 활성화 조건 (관리자 모드이거나 카테고리가 방명록 'gb'일 때 상시 노출)
+  if (IS_ADMIN_MODE || currentCategoryFilter === "gb") {
+    addPostBtn.style.display = "inline";
+  } else {
+    addPostBtn.style.display = "none";
+  }
+
+  // [수정] 오직 'all' (내 PC 메인 화면) 카테고리에만 상단 사진 배너 배치
+  if (currentCategoryFilter === "all") {
     const banner = document.createElement("div");
     banner.className = "main-pc-root-banner";
     container.appendChild(banner);
   }
 
-  // 레이아웃 스타일 설정
   const isPhotoView = ["photos", "p_sub_log", "p_sub_gift"].includes(currentCategoryFilter);
   const layoutWrapper = document.createElement("div");
   layoutWrapper.className = isPhotoView ? "grid-layout-photos-3col" : "grid-layout-original";
@@ -801,7 +782,6 @@ function renderContentListGrid() {
   Object.keys(globalPostsData).forEach(uniqueKey => {
     const post = globalPostsData[uniqueKey];
     
-    // 카테고리 매칭 검사
     let isMatched = false;
     if (currentCategoryFilter === "all") {
       isMatched = true;
@@ -813,7 +793,6 @@ function renderContentListGrid() {
       isMatched = (post.category === currentCategoryFilter);
     }
 
-    // 검색 키워드 필터 검사
     if (isMatched && searchWord) {
       const tMatch = post.title && post.title.toLowerCase().includes(searchWord);
       const cMatch = post.text && post.text.toLowerCase().includes(searchWord);
@@ -842,15 +821,21 @@ function renderContentListGrid() {
         <button class="admin-badge-btn" data-key="${uniqueKey}">Edit</button>
       `;
 
-      // 에디터 트리거 차단 후 상세 팝업 오픈
       itemCard.addEventListener("click", (e) => {
         if (e.target.classList.contains("admin-badge-btn")) return;
         openPostDetailModal(post);
       });
 
-      // 관리자 수정 액션 연결
       const editBtn = itemCard.querySelector(".admin-badge-btn");
       if (editBtn) {
+        // 수정/삭제 버튼 노출 제어 (방명록 글은 누구나 수정 창을 열 수 있게 허용하거나 관리자일 때 활성화)
+        if (IS_ADMIN_MODE || post.category === "gb") {
+          editBtn.style.display = "none"; // 호버 시 CSS로 제어됨
+        } else {
+          editBtn.style.pointerEvents = "none";
+          editBtn.style.opacity = "0";
+        }
+        
         editBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           openAdminEditorForm(uniqueKey, post);
@@ -885,7 +870,6 @@ function openPostDetailModal(post) {
   openTargetWindow("win-blog-detail");
 }
 
-// 사이드바 카테고리 전환 이벤트 바인딩
 document.querySelectorAll(".sidebar-item").forEach(item => {
   item.addEventListener("click", () => {
     document.querySelectorAll(".sidebar-item").forEach(i => i.classList.remove("active"));
@@ -902,7 +886,6 @@ document.querySelectorAll(".sidebar-item").forEach(item => {
   });
 });
 
-// 뒤로가기 / 앞으로가기 히스토리 브라우징 제어
 document.getElementById("btn-finder-back").addEventListener("click", () => {
   if (currentPathPointer > 0) {
     currentPathPointer--;
@@ -918,12 +901,14 @@ document.getElementById("btn-finder-back").addEventListener("click", () => {
 document.getElementById("finder-search-input").addEventListener("input", renderContentListGrid);
 
 // ==========================================================================
-// 6. 데이터베이스 총괄 관리자 편집기 폼 로직
+// 6. 데이터베이스 편집기 폼 로직 (글쓰기/방명록 통합)
 // ==========================================================================
 const adminEditorWindow = document.getElementById("win-admin-editor");
 
 document.getElementById("admin-add-post-btn").addEventListener("click", () => {
-  openAdminEditorForm("", { category: "gb", title: "", src: "", text: "" });
+  // 현재 보고 있는 카테고리를 기본값으로 폼 오픈
+  let defaultCate = ["gb", "c_sub_diary", "c_sub_note", "p_sub_log", "p_sub_gift"].includes(currentCategoryFilter) ? currentCategoryFilter : "gb";
+  openAdminEditorForm("", { category: defaultCate, title: "", src: "", text: "" });
 });
 
 function openAdminEditorForm(key, post) {
@@ -946,35 +931,40 @@ document.getElementById("btn-admin-submit-action").addEventListener("click", () 
 
   if (key) {
     dbRefMain.child(key).update(data, (err) => {
-      if (!err) { alert("포스트 수정이 성공적으로 반영되었습니다."); closeTargetWindow("win-admin-editor"); }
+      if (!err) { alert("반영되었습니다."); closeTargetWindow("win-admin-editor"); }
     });
   } else {
     dbRefMain.push(data, (err) => {
-      if (!err) { alert("새 포스트가 데이터베이스에 등록되었습니다."); closeTargetWindow("win-admin-editor"); }
+      if (!err) { alert("등록되었습니다."); closeTargetWindow("win-admin-editor"); }
     });
   }
 });
 
 document.getElementById("btn-admin-delete-action").addEventListener("click", () => {
   const key = document.getElementById("form-edit-id").value;
-  if (!key) { alert("삭제할 대상 지정 데이터가 없습니다."); return; }
+  if (!key) { alert("삭제할 대상이 없습니다."); return; }
   if (confirm("정말로 이 데이터를 실시간 클라우드 DB에서 삭제하시겠습니까?")) {
     dbRefMain.child(key).remove((err) => {
-      if (!err) { alert("데이터가 완전히 삭제되었습니다."); closeTargetWindow("win-admin-editor"); }
+      if (!err) { alert("삭제되었습니다."); closeTargetWindow("win-admin-editor"); }
     });
   }
 });
 
 // ==========================================================================
-// 7. 실시간 디데이(D-Day) 위젯 로직
+// 7. 실시간 디데이(D-Day) 위젯 로직 (기본값 날아감 방지 보호 처리)
 // ==========================================================================
 let globalDdayTargetDateString = "";
 
 dbRefDday.on("value", (snapshot) => {
   const d = snapshot.val();
-  if (d) {
-    globalDdayTargetDateString = d.date || "";
+  if (d && d.date) {
+    globalDdayTargetDateString = d.date;
     document.getElementById("wd-dday-title").innerText = d.title || "무제 이벤트";
+    calculateDdayCountdown();
+  } else {
+    // [수정] 파이어베이스 데이터가 비었거나 초기 상태일 때 기본 설정 유지 구동
+    globalDdayTargetDateString = DEFAULT_BLANK_DB.date;
+    document.getElementById("wd-dday-title").innerText = DEFAULT_BLANK_DB.title;
     calculateDdayCountdown();
   }
 });
@@ -1024,7 +1014,7 @@ document.getElementById("btn-admin-dday-save").addEventListener("click", () => {
 // ==========================================================================
 let timerEngineInstance = null;
 let timerTotalSecondsLeft = 1500;
-let currentTimerMode = "normal"; // normal | pomo
+let currentTimerMode = "normal";
 
 const modeTabButtons = document.querySelectorAll("[data-timermode]");
 modeTabButtons.forEach(btn => {
@@ -1095,7 +1085,7 @@ document.getElementById("wctrl-reset").addEventListener("click", () => {
 });
 
 // ==========================================================================
-// 9. 유튜브 API 연동 뮤직 플레이어 로직 (파이어베이스 주소&커버 고정 연동)
+// 9. 유튜브 API 연동 뮤직 플레이어 로직
 // ==========================================================================
 let ytPlayerEngine = null;
 let ytProgressIntervalLoop = null;
@@ -1103,7 +1093,7 @@ let currentLoadedVideoId = "";
 
 window.onYouTubeIframeAPIReady = function() {
   ytPlayerEngine = new YT.Player('yt-audio-player-engine', {
-    height: '10,', width: '10',
+    height: '10', width: '10',
     videoId: '',
     playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1 },
     events: {
@@ -1124,15 +1114,15 @@ function onPlayerEngineReady() {
   dbRefMusic.on("value", (snapshot) => {
     const data = snapshot.val();
     if (data) {
-      if (data.cover) {
-        document.getElementById("music-player-cover").src = data.cover;
-      }
+      // [수정] 파이어베이스에 커버가 지정되어 있어도 항상 지정하신 고정 스크린샷 주소를 투영하도록 동기화 유지 보완
+      document.getElementById("music-player-cover").src = "https://curly-lime-lghv1a47.edgeone.app/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7%202026-06-20%20010123.png";
+      
       if (data.url) {
         const vid = extractYoutubeVideoId(data.url);
         if (vid && vid !== currentLoadedVideoId) {
           currentLoadedVideoId = vid;
           ytPlayerEngine.cueVideoById(vid);
-          document.getElementById("music-track-title").innerText = data.title || "동기화된 공유 음악 피드";
+          document.getElementById("music-track-title").innerText = data.title || "공유 음악 트랙";
         }
       }
     }
@@ -1166,8 +1156,8 @@ document.getElementById("music-yt-url-input").addEventListener("keydown", (e) =>
     if (!inputVal) return;
     
     if (IS_ADMIN_MODE) {
-      dbRefMusic.update({ url: inputVal, title: "새로운 추천 음악 트랙" }, (err) => {
-        if (!err) { e.target.value = ""; alert("유튜브 미디어 링크가 데이터베이스에 업데이트되었습니다."); }
+      dbRefMusic.update({ url: inputVal, title: "새로운 추천 공유 트랙" }, (err) => {
+        if (!err) { e.target.value = ""; alert("음악 링크가 업데이트되었습니다."); }
       });
     } else {
       const v = extractYoutubeVideoId(inputVal);
@@ -1187,7 +1177,7 @@ document.getElementById("btn-music-art-save").addEventListener("click", () => {
   dbRefMusic.update({ cover: src }, (err) => {
     if (!err) {
       document.getElementById("music-art-src-input").value = "";
-      alert("앨범 디자인 커버가 동기화 저장되었습니다.");
+      alert("앨범 커버 주소가 저장되었습니다.");
     }
   });
 });
@@ -1236,12 +1226,10 @@ dbRefTodos.on("value", (snapshot) => {
       <span class="todo-del-btn">×</span>
     `;
     
-    // 체크박스 상태 전환 연동
     row.querySelector("input").addEventListener("change", (e) => {
       dbRefTodos.child(key).update({ done: e.target.checked });
     });
     
-    // 개별 항목 삭제 연동
     row.querySelector(".todo-del-btn").addEventListener("click", () => {
       dbRefTodos.child(key).remove();
     });
@@ -1261,7 +1249,7 @@ todoInputField.addEventListener("keydown", (e) => {
 });
 
 // ==========================================================================
-// 11. 메모장 탭 관리 시스템 로직 (파이어베이스 실시간 보존형)
+// 11. 메모장 탭 관리 시스템 로직
 // ==========================================================================
 let globalTabsDataset = {};
 let currentlySelectedTabId = "";
@@ -1270,7 +1258,6 @@ const textareaCore = document.getElementById("notepad-textarea-core");
 dbRefNotepad.on("value", (snapshot) => {
   globalTabsDataset = snapshot.val() || {};
   
-  // 최초 바인딩 및 기본 탭 보장 생성조건 처리
   if (Object.keys(globalTabsDataset).length === 0) {
     const defaultKey = dbRefNotepad.push().key;
     dbRefNotepad.child(defaultKey).set({ name: "메모 1", content: "" });
@@ -1321,7 +1308,6 @@ function rebuildNotepadTabsUILayout() {
     bar.insertBefore(tabEl, document.getElementById("btn-notepad-add-tab"));
   });
   
-  // 선택된 탭 텍스트 동기화 투영
   const activeData = globalTabsDataset[currentlySelectedTabId];
   if (activeData) {
     textareaCore.value = activeData.content || "";
@@ -1331,7 +1317,6 @@ function rebuildNotepadTabsUILayout() {
   updateCharCounterDisplay();
 }
 
-// 탭 추가 바인딩
 document.getElementById("btn-notepad-add-tab").addEventListener("click", () => {
   const currentTabCount = Object.keys(globalTabsDataset).length;
   const newKey = dbRefNotepad.push().key;
@@ -1343,7 +1328,6 @@ document.getElementById("btn-notepad-add-tab").addEventListener("click", () => {
   });
 });
 
-// 타이핑 및 내용 업데이트 실시간 파이어베이스 동기화 반영
 let notepadDebounceTimer = null;
 textareaCore.addEventListener("input", () => {
   updateCharCounterDisplay();
