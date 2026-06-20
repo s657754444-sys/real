@@ -101,10 +101,10 @@ body {
 .content-top-menu { height: 32px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--border-light); background: #fafafa; }
 .content-body { flex: 1; padding: 16px; overflow-y: auto; }
 
-/* --- [수정] 내 PC 메인 화면 배너 전용 고정 스타일 기획 --- */
+/* --- [수정] 내 PC 메인 화면 사진 세로 길이 대폭 연장 --- */
 .main-pc-root-banner {
   width: 100%;
-  height: 120px; /* 높이 최적화 조절 */
+  height: 220px; /* 기존 120px -> 220px로 확장 */
   border-radius: var(--radius-md);
   margin-bottom: 16px;
   border: 1px solid var(--border-medium);
@@ -113,6 +113,38 @@ body {
   background-position: center !important;
   background-repeat: no-repeat !important;
 }
+
+/* --- [신규] 스크린샷 스타일 기반 방명록 상시 작성 구역 CSS --- */
+.guestbook-write-box {
+  background: #ededed; padding: 18px; border-radius: var(--radius-lg); margin-bottom: 20px;
+  display: flex; flex-direction: column; gap: 10px; border: 1px solid #dbdbdb;
+}
+.gb-inline-row { display: flex; gap: 10px; }
+.gb-input-style {
+  flex: 1; height: 36px; border: 1px solid #d1d1d1; border-radius: var(--radius-md);
+  padding: 0 12px; font-size: 12px; outline: none; background: #ffffff;
+}
+.gb-textarea-style {
+  width: 100%; height: 75px; border: 1px solid #d1d1d1; border-radius: var(--radius-md);
+  padding: 10px 12px; font-size: 12px; resize: none; outline: none; background: #ffffff; font-family: inherit;
+}
+.gb-submit-wrap { display: flex; justify-content: flex-end; align-items: center; }
+.btn-gb-submit {
+  width: 75px; height: 32px; background: #a89f9b; color: white; border: none;
+  border-radius: 16px; font-size: 12px; font-weight: bold; cursor: pointer; transition: background 0.2s;
+}
+.btn-gb-submit:hover { background: var(--point-orange-mid); }
+
+/* --- 방명록 전용 출력 리스트 아이템 스타일 --- */
+.gb-render-card {
+  background: #f5f5f5; border-radius: var(--radius-md); padding: 14px; margin-bottom: 12px;
+  position: relative; border: 1px solid #e8e8e8;
+}
+.gb-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.gb-card-avatar { width: 30px; height: 30px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.gb-card-name { font-size: 12px; font-weight: bold; color: #333; }
+.gb-card-date { font-size: 10px; color: var(--text-muted); margin-left: auto; margin-right: 25px; }
+.gb-card-body { font-size: 12px; line-height: 1.5; color: #444; white-space: pre-wrap; padding-left: 38px; }
 
 .grid-layout-original { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px; }
 .grid-layout-photos-3col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -195,6 +227,7 @@ body {
 .btn-field-del { background: #ff4d4d; color: white; border: none; border-radius: 6px; padding: 0 12px; font-size: 11px; cursor: pointer; }
 .admin-badge-btn { position: absolute; top: 2px; right: 2px; background: var(--point-orange-accent); color: white; border: none; font-size: 9px; padding: 1px 3px; border-radius: 3px; cursor: pointer; display: none; z-index: 10; }
 .card-style-original:hover .admin-badge-btn { display: block; }
+.gb-render-card:hover .admin-badge-btn { display: block; }
 
 #start-menu-window { position: fixed; left: 16px; bottom: 50px; width: 250px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: var(--radius-lg); border: 2px solid var(--point-orange-mid); box-shadow: 0 8px 24px rgba(0,0,0,0.08); display: none; flex-direction: column; padding: 12px; z-index: 2000; }
 .start-profile-area { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border-light); position: relative; }
@@ -502,14 +535,13 @@ const dbRefMusic     = db.ref("orange_os/music_data");
 const dbRefTodos     = db.ref("orange_os/todos");
 const dbRefNotepad   = db.ref("orange_os/notepad_tabs");
 
-// 기본 디데이 설정 (DB에 데이터가 없을 때 복구용 기본값)
 const DEFAULT_BLANK_DB = {
   title: "한화이글스 시즌 개막",
   date: "2026-04-01"
 };
 
 // ==========================================================================
-// 2. 관리자 인증 시스템 (비밀번호 2598 복구 및 UI 적용)
+// 2. 관리자 인증 시스템 (비밀번호: 2598)
 // ==========================================================================
 let IS_ADMIN_MODE = false;
 
@@ -526,12 +558,11 @@ function applyAdminUIRender() {
     statusText.style.color = "var(--text-muted)";
     if (musicForm) musicForm.style.display = "none";
   }
-  // 게시글 리스트와 상단 버튼 영역 재렌더링
+  // 권한 변경에 따른 화면 UI 재렌더링
   renderContentListGrid(); 
 }
 
 window.connectAdmin = function(pwd) {
-  // 관리자 비밀번호를 2598로 수정 및 확인
   if (pwd === "2598") {
     IS_ADMIN_MODE = true;
     applyAdminUIRender();
@@ -555,7 +586,7 @@ document.getElementById("admin-login-indicator").addEventListener("click", () =>
 });
 
 // ==========================================================================
-// 3. 눈 내리는 애니메이션 효과 (실시간 렌더링 Canvas)
+// 3. 눈 내리는 애니메이션 효과 (Canvas)
 // ==========================================================================
 const canvas = document.getElementById("snow-canvas");
 const ctx = canvas.getContext("2d");
@@ -610,7 +641,7 @@ function loopSnowAnimation() {
 requestAnimationFrame(loopSnowAnimation);
 
 // ==========================================================================
-// 4. 창 제어 시스템 (드래그앤드롭, Z-Index 최상단 전환, 최소화, 최대화)
+// 4. 창 제어 시스템 (드래그앤드롭, Z-Index, 최소/최대화)
 // ==========================================================================
 let topZIndex = 100;
 const openedWindowIds = new Set();
@@ -724,7 +755,7 @@ document.addEventListener("click", (e) => {
 });
 
 // ==========================================================================
-// 5. 내 사진 및 PC 탐색기 로직 (메인 화면 배너 고정 및 방명록 버튼 상시 노출)
+// 5. 탐색기 및 방명록(gb) 핵심 로직 (UI 전면 수정 및 권한 통제)
 // ==========================================================================
 let currentCategoryFilter = "all";
 let globalPostsData = {};
@@ -758,20 +789,111 @@ function renderContentListGrid() {
   document.getElementById("header-path-text").innerText = pathNamesMap[currentCategoryFilter] || "C:\\내 PC";
   document.getElementById("finder-tab-title").innerText = currentCategoryFilter === "all" ? "내 PC" : currentCategoryFilter;
 
-  // 상단 글쓰기 버튼 활성화 조건 (관리자 모드이거나 카테고리가 방명록 'gb'일 때 상시 노출)
-  if (IS_ADMIN_MODE || currentCategoryFilter === "gb") {
+  // [수정] 방명록 작성을 제외한 모든 글 작성 버튼은 오직 관리자 모드에서만 노출
+  if (IS_ADMIN_MODE) {
     addPostBtn.style.display = "inline";
   } else {
     addPostBtn.style.display = "none";
   }
 
-  // [수정] 오직 'all' (내 PC 메인 화면) 카테고리에만 상단 사진 배너 배치
+  // 내 PC 메인 화면 배너 생성 (세로 길이 늘어난 버전)
   if (currentCategoryFilter === "all") {
     const banner = document.createElement("div");
     banner.className = "main-pc-root-banner";
     container.appendChild(banner);
   }
 
+  // [수정] 현재 카테고리가 방명록(gb)일 때: 스크린샷과 동일한 고유 폼 출력
+  if (currentCategoryFilter === "gb") {
+    const writeBox = document.createElement("div");
+    writeBox.className = "guestbook-write-box";
+    writeBox.innerHTML = `
+      <div style="font-size:14px; font-weight:bold; color:#4a3e3d; margin-bottom:2px;">방명록 <span style="font-size:11px; font-weight:normal; color:#a69491;">방명록을 남겨주세요</span></div>
+      <div class="gb-inline-row">
+        <input type="text" id="gb-new-name" class="gb-input-style" placeholder="이름">
+        <input type="password" id="gb-new-pwd" class="gb-input-style" placeholder="비밀번호">
+      </div>
+      <textarea id="gb-new-text" class="gb-textarea-style" placeholder="내용을 입력하세요."></textarea>
+      <div class="gb-submit-wrap">
+        <button class="btn-gb-submit" id="btn-gb-submit-action">등록</button>
+      </div>
+    `;
+    container.appendChild(writeBox);
+
+    // 인라인 등록 버튼 이벤트 연결 (누구나 작성 가능)
+    writeBox.querySelector("#btn-gb-submit-action").addEventListener("click", () => {
+      const name = document.getElementById("gb-new-name").value.trim();
+      const text = document.getElementById("gb-new-text").value.trim();
+      
+      if (!name || !text) {
+        alert("이름과 내용을 모두 입력해주세요.");
+        return;
+      }
+
+      const dateObj = new Date();
+      const timeString = `${dateObj.getFullYear()}. ${dateObj.getMonth()+1}. ${dateObj.getDate()}. ${dateObj.getHours().toString().padStart(2,'0')}:${dateObj.getMinutes().toString().padStart(2,'0')}`;
+
+      dbRefMain.push({
+        category: "gb",
+        title: name,
+        text: text,
+        dateString: timeString
+      }, (err) => {
+        if (!err) {
+          document.getElementById("gb-new-name").value = "";
+          document.getElementById("gb-new-pwd").value = "";
+          document.getElementById("gb-new-text").value = "";
+        }
+      });
+    });
+
+    // 방명록 리스트 전용 렌더링 구역
+    const gbListContainer = document.createElement("div");
+    container.appendChild(gbListContainer);
+
+    let displayedCount = 0;
+    Object.keys(globalPostsData).forEach(uniqueKey => {
+      const post = globalPostsData[uniqueKey];
+      if (post.category === "gb") {
+        displayedCount++;
+        const gbCard = document.createElement("div");
+        gbCard.className = "gb-render-card";
+        
+        const dateDisplay = post.dateString || "2026. 06. 20. 18:55";
+
+        gbCard.innerHTML = `
+          <div class="gb-card-header">
+            <div class="gb-card-avatar">🍀</div>
+            <div class="gb-card-name">${post.title || "익명"}</div>
+            <div class="gb-card-date">${dateDisplay}</div>
+          </div>
+          <div class="gb-card-body">${post.text || ""}</div>
+          <button class="admin-badge-btn" data-key="${uniqueKey}">× 삭제</button>
+        `;
+
+        // [수정] 방명록 글 삭제 권한 제어: 오직 관리자 모드에서만 삭제 버튼 작동 및 노출
+        const delBtn = gbCard.querySelector(".admin-badge-btn");
+        if (IS_ADMIN_MODE) {
+          delBtn.style.display = "none"; // CSS 호버 효과로 제어됨
+          delBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (confirm("관리자 권한으로 이 방명록 데이터를 삭제하시겠습니까?")) {
+              dbRefMain.child(uniqueKey).remove();
+            }
+          });
+        } else {
+          delBtn.remove();
+        }
+
+        gbListContainer.appendChild(gbCard);
+      }
+    });
+
+    document.getElementById("content-items-count").innerText = `항목 ${displayedCount}개`;
+    return; // 방명록 전용 UI 렌더링 후 조기 종료
+  }
+
+  // 일반 폴더 및 사진첩 카테고리 렌더링 처리
   const isPhotoView = ["photos", "p_sub_log", "p_sub_gift"].includes(currentCategoryFilter);
   const layoutWrapper = document.createElement("div");
   layoutWrapper.className = isPhotoView ? "grid-layout-photos-3col" : "grid-layout-original";
@@ -781,8 +903,8 @@ function renderContentListGrid() {
 
   Object.keys(globalPostsData).forEach(uniqueKey => {
     const post = globalPostsData[uniqueKey];
-    
     let isMatched = false;
+    
     if (currentCategoryFilter === "all") {
       isMatched = true;
     } else if (currentCategoryFilter === "c") {
@@ -796,9 +918,7 @@ function renderContentListGrid() {
     if (isMatched && searchWord) {
       const tMatch = post.title && post.title.toLowerCase().includes(searchWord);
       const cMatch = post.text && post.text.toLowerCase().includes(searchWord);
-      if (!tMatch && !cMatch) {
-        isMatched = false;
-      }
+      if (!tMatch && !cMatch) isMatched = false;
     }
 
     if (isMatched) {
@@ -821,25 +941,19 @@ function renderContentListGrid() {
         <button class="admin-badge-btn" data-key="${uniqueKey}">Edit</button>
       `;
 
-      itemCard.addEventListener("click", (e) => {
-        if (e.target.classList.contains("admin-badge-btn")) return;
+      itemCard.addEventListener("click", () => {
         openPostDetailModal(post);
       });
 
+      // [수정] 일반 글 수정/삭제 폼 진입 제어: 오직 관리자 모드에서만 수정 버튼 활성화
       const editBtn = itemCard.querySelector(".admin-badge-btn");
-      if (editBtn) {
-        // 수정/삭제 버튼 노출 제어 (방명록 글은 누구나 수정 창을 열 수 있게 허용하거나 관리자일 때 활성화)
-        if (IS_ADMIN_MODE || post.category === "gb") {
-          editBtn.style.display = "none"; // 호버 시 CSS로 제어됨
-        } else {
-          editBtn.style.pointerEvents = "none";
-          editBtn.style.opacity = "0";
-        }
-        
+      if (IS_ADMIN_MODE) {
         editBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           openAdminEditorForm(uniqueKey, post);
         });
+      } else {
+        editBtn.remove();
       }
 
       layoutWrapper.appendChild(itemCard);
@@ -901,19 +1015,17 @@ document.getElementById("btn-finder-back").addEventListener("click", () => {
 document.getElementById("finder-search-input").addEventListener("input", renderContentListGrid);
 
 // ==========================================================================
-// 6. 데이터베이스 편집기 폼 로직 (글쓰기/방명록 통합)
+// 6. 데이터베이스 편집기 폼 로직 (관리자 전용 제어)
 // ==========================================================================
-const adminEditorWindow = document.getElementById("win-admin-editor");
-
 document.getElementById("admin-add-post-btn").addEventListener("click", () => {
-  // 현재 보고 있는 카테고리를 기본값으로 폼 오픈
-  let defaultCate = ["gb", "c_sub_diary", "c_sub_note", "p_sub_log", "p_sub_gift"].includes(currentCategoryFilter) ? currentCategoryFilter : "gb";
+  if (!IS_ADMIN_MODE) return;
+  let defaultCate = ["c_sub_diary", "c_sub_note", "p_sub_log", "p_sub_gift"].includes(currentCategoryFilter) ? currentCategoryFilter : "c_sub_diary";
   openAdminEditorForm("", { category: defaultCate, title: "", src: "", text: "" });
 });
 
 function openAdminEditorForm(key, post) {
   document.getElementById("form-edit-id").value = key || "";
-  document.getElementById("form-item-category").value = post.category || "gb";
+  document.getElementById("form-item-category").value = post.category || "c_sub_diary";
   document.getElementById("form-item-title").value = post.title || "";
   document.getElementById("form-item-src").value = post.src || "";
   document.getElementById("form-item-text").value = post.text || "";
@@ -921,6 +1033,7 @@ function openAdminEditorForm(key, post) {
 }
 
 document.getElementById("btn-admin-submit-action").addEventListener("click", () => {
+  if (!IS_ADMIN_MODE) return;
   const key = document.getElementById("form-edit-id").value;
   const data = {
     category: document.getElementById("form-item-category").value,
@@ -941,6 +1054,7 @@ document.getElementById("btn-admin-submit-action").addEventListener("click", () 
 });
 
 document.getElementById("btn-admin-delete-action").addEventListener("click", () => {
+  if (!IS_ADMIN_MODE) return;
   const key = document.getElementById("form-edit-id").value;
   if (!key) { alert("삭제할 대상이 없습니다."); return; }
   if (confirm("정말로 이 데이터를 실시간 클라우드 DB에서 삭제하시겠습니까?")) {
@@ -951,7 +1065,7 @@ document.getElementById("btn-admin-delete-action").addEventListener("click", () 
 });
 
 // ==========================================================================
-// 7. 실시간 디데이(D-Day) 위젯 로직 (기본값 날아감 방지 보호 처리)
+// 7. 실시간 디데이(D-Day) 위젯 로직
 // ==========================================================================
 let globalDdayTargetDateString = "";
 
@@ -962,7 +1076,6 @@ dbRefDday.on("value", (snapshot) => {
     document.getElementById("wd-dday-title").innerText = d.title || "무제 이벤트";
     calculateDdayCountdown();
   } else {
-    // [수정] 파이어베이스 데이터가 비었거나 초기 상태일 때 기본 설정 유지 구동
     globalDdayTargetDateString = DEFAULT_BLANK_DB.date;
     document.getElementById("wd-dday-title").innerText = DEFAULT_BLANK_DB.title;
     calculateDdayCountdown();
@@ -1000,12 +1113,13 @@ document.getElementById("wd-dday-trigger-box").addEventListener("click", () => {
 });
 
 document.getElementById("btn-admin-dday-save").addEventListener("click", () => {
+  if (!IS_ADMIN_MODE) return;
   const data = {
     title: document.getElementById("form-dday-title").value,
     date: document.getElementById("form-dday-date").value
   };
   dbRefDday.set(data, (err) => {
-    if (!err) { alert("디데이 설정이 실시간 동기화 저장되었습니다."); closeTargetWindow("win-admin-dday"); }
+    if (!err) { alert("디데이 설정이 동기화 저장되었습니다."); closeTargetWindow("win-admin-dday"); }
   });
 });
 
@@ -1070,7 +1184,7 @@ document.getElementById("wctrl-start").addEventListener("click", () => {
         clearInterval(timerEngineInstance);
         timerEngineInstance = null;
         btn.innerText = "시작";
-        alert(currentTimerMode === "pomo" ? "[뽀모도로] 집중 시간이 종료되었습니다! 휴식을 취하세요." : "설정하신 타이머 시간이 완료되었습니다!");
+        alert(currentTimerMode === "pomo" ? "[뽀모도로] 집중 시간이 종료되었습니다!" : "설정하신 타이머 시간이 완료되었습니다!");
       }
     }, 1000);
   }
@@ -1114,9 +1228,7 @@ function onPlayerEngineReady() {
   dbRefMusic.on("value", (snapshot) => {
     const data = snapshot.val();
     if (data) {
-      // [수정] 파이어베이스에 커버가 지정되어 있어도 항상 지정하신 고정 스크린샷 주소를 투영하도록 동기화 유지 보완
       document.getElementById("music-player-cover").src = "https://curly-lime-lghv1a47.edgeone.app/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7%202026-06-20%20010123.png";
-      
       if (data.url) {
         const vid = extractYoutubeVideoId(data.url);
         if (vid && vid !== currentLoadedVideoId) {
@@ -1172,6 +1284,7 @@ document.getElementById("music-yt-url-input").addEventListener("keydown", (e) =>
 });
 
 document.getElementById("btn-music-art-save").addEventListener("click", () => {
+  if (!IS_ADMIN_MODE) return;
   const src = document.getElementById("music-art-src-input").value.trim();
   if (!src) return;
   dbRefMusic.update({ cover: src }, (err) => {
@@ -1298,9 +1411,7 @@ function rebuildNotepadTabsUILayout() {
       }
       if (confirm(`'${tabData.name}' 탭을 클라우드에서 삭제하시겠습니까?`)) {
         dbRefNotepad.child(key).remove(() => {
-          if (currentlySelectedTabId === key) {
-            currentlySelectedTabId = "";
-          }
+          if (currentlySelectedTabId === key) currentlySelectedTabId = "";
         });
       }
     });
@@ -1355,7 +1466,7 @@ document.getElementById("btn-notepad-clear-current").addEventListener("click", (
 });
 
 // ==========================================================================
-// 12. 시스템 실시간 하단바 디지털 시계 구동 로직
+// 12. 디지털 시계 구동
 // ==========================================================================
 function refreshSystemDigitalClock() {
   const clockEl = document.getElementById("system-clock");
