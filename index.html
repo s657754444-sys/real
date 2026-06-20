@@ -1249,6 +1249,17 @@ function onPlayerEngineReady() {
 
 function onPlayerEngineStateChange(event) {
   const pBtn = document.getElementById("mctrl-play");
+  
+  // 영상이 재생 중이거나 정보가 로드되어 준비되었을 때 제목을 가져옵니다.
+  if (event.data === YT.PlayerState.PLAYING || event.data === YT.PlayerState.CUED) {
+    if (ytPlayerEngine && typeof ytPlayerEngine.getVideoData === 'function') {
+      const videoData = ytPlayerEngine.getVideoData();
+      if (videoData && videoData.title) {
+        document.getElementById("music-track-title").innerText = videoData.title;
+      }
+    }
+  }
+
   if (event.data === YT.PlayerState.PLAYING) {
     pBtn.innerText = "⏸";
     startMusicProgressTracker();
@@ -1274,15 +1285,24 @@ document.getElementById("music-yt-url-input").addEventListener("keydown", (e) =>
     if (!inputVal) return;
     
     if (IS_ADMIN_MODE) {
-      dbRefMusic.update({ url: inputVal, title: "새로운 추천 공유 트랙" }, (err) => {
-        if (!err) { e.target.value = ""; alert("음악 링크가 업데이트되었습니다."); }
-      });
+      // 관리자 모드일 때는 비동기로 영상을 임시 로드하여 제목을 추출한 뒤 DB에 저장하도록 개선할 수 있습니다.
+      const v = extractYoutubeVideoId(inputVal);
+      if (v) {
+        ytPlayerEngine.cueVideoById(v);
+        setTimeout(() => {
+          const videoData = ytPlayerEngine.getVideoData();
+          const ytTitle = (videoData && videoData.title) ? videoData.title : "새로운 추천 공유 트랙";
+          dbRefMusic.update({ url: inputVal, title: ytTitle }, (err) => {
+            if (!err) { e.target.value = ""; alert("음악 링크와 제목이 클라우드에 업데이트되었습니다."); }
+          });
+        }, 500);
+      }
     } else {
       const v = extractYoutubeVideoId(inputVal);
       if (v) {
         currentLoadedVideoId = v;
-        ytPlayerEngine.loadVideoById(v);
-        document.getElementById("music-track-title").innerText = "로컬 임시 스트리밍 트랙";
+        document.getElementById("music-track-title").innerText = "로딩 중...";
+        ytPlayerEngine.loadVideoById(v); // 영상 로드 후 위의 StateChange 이벤트에서 제목을 매핑합니다.
         e.target.value = "";
       }
     }
