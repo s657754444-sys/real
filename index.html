@@ -536,8 +536,8 @@ const dbRefTodos     = db.ref("orange_os/todos");
 const dbRefNotepad   = db.ref("orange_os/notepad_tabs");
 
 const DEFAULT_BLANK_DB = {
-  title: "한화이글스 시즌 개막",
-  date: "2026-04-01"
+  title: "B-DAY",
+  date: "07-11"   // 연도 없이 월-일만 저장 → 매년 반복
 };
 
 // ==========================================================================
@@ -1074,13 +1074,15 @@ dbRefDday.on("value", (snapshot) => {
   if (d && d.date) {
     globalDdayTargetDateString = d.date;
     document.getElementById("wd-dday-title").innerText = d.title || "무제 이벤트";
-    calculateDdayCountdown();
   } else {
     globalDdayTargetDateString = DEFAULT_BLANK_DB.date;
     document.getElementById("wd-dday-title").innerText = DEFAULT_BLANK_DB.title;
-    calculateDdayCountdown();
   }
+  calculateDdayCountdown();
 });
+
+// 페이지를 오래 켜둬도 자정 넘어가면 갱신되도록 1시간마다 재계산
+setInterval(calculateDdayCountdown, 60 * 60 * 1000);
 
 function calculateDdayCountdown() {
   const display = document.getElementById("wd-dday-days");
@@ -1090,40 +1092,43 @@ function calculateDdayCountdown() {
   }
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // 저장된 값이 "MM-DD"든 옛날처럼 "YYYY-MM-DD"든 뒤의 월-일만 사용
   const parts = globalDdayTargetDateString.split("-");
-  const target = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-  
+  const mm = parseInt(parts[parts.length - 2], 10);
+  const dd = parseInt(parts[parts.length - 1], 10);
+
+  let target = new Date(now.getFullYear(), mm - 1, dd);
+  if (target.getTime() < today.getTime()) {
+    target = new Date(now.getFullYear() + 1, mm - 1, dd); // 이미 지났으면 내년으로 자동 이동
+  }
+
   const diffTime = target.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 0) {
-    display.innerText = "D-Day";
-  } else if (diffDays > 0) {
-    display.innerText = `D-${diffDays}`;
-  } else {
-    display.innerText = `D+${Math.abs(diffDays)}`;
-  }
-}
 
+  display.innerText = diffDays === 0 ? "D-Day" : `D-${diffDays}`;
+}
 document.getElementById("wd-dday-trigger-box").addEventListener("click", () => {
   if (!IS_ADMIN_MODE) return;
   document.getElementById("form-dday-title").value = document.getElementById("wd-dday-title").innerText;
-  document.getElementById("form-dday-date").value = globalDdayTargetDateString;
+  const y = new Date().getFullYear();
+  document.getElementById("form-dday-date").value = globalDdayTargetDateString ? `${y}-${globalDdayTargetDateString}` : "";
   openTargetWindow("win-admin-dday");
 });
 
 document.getElementById("btn-admin-dday-save").addEventListener("click", () => {
   if (!IS_ADMIN_MODE) return;
+  const rawDate = document.getElementById("form-dday-date").value;
+  if (!rawDate) { alert("날짜를 선택해주세요."); return; }
   const data = {
     title: document.getElementById("form-dday-title").value,
-    date: document.getElementById("form-dday-date").value
+    date: rawDate.slice(5)   // "YYYY-MM-DD"에서 "MM-DD"만 추출 → 매년 반복
   };
   dbRefDday.set(data, (err) => {
-    if (!err) { alert("디데이 설정이 동기화 저장되었습니다."); closeTargetWindow("win-admin-dday"); }
+    if (!err) { alert("디데이 설정이 동기화 저장되었습니다. (매년 반복)"); closeTargetWindow("win-admin-dday"); }
   });
 });
 
-// ==========================================================================
 // 8. 뽀모도로 및 멀티기능 타이머 위젯 로직
 // ==========================================================================
 let timerEngineInstance = null;
