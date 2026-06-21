@@ -183,6 +183,47 @@ body {
 .notepad-actions { display: flex; gap: 12px; }
 .notepad-action-btn { cursor: pointer; font-weight: 500; }
 
+
+
+// 사진 파일을 선택하면 자동으로 압축해서 URL 칸에 채워줌
+function resizeImageToDataUrl(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxDim) { height *= maxDim / width; width = maxDim; }
+        else if (height > maxDim) { width *= maxDim / height; height = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('form-item-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const dataUrl = await resizeImageToDataUrl(file, 1000, 0.75);
+  document.getElementById('form-item-src').value = dataUrl;
+  alert('사진이 첨부됐어! 이제 [수정/등록 반영] 버튼을 눌러서 저장해줘.');
+});
+document.getElementById('music-art-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const dataUrl = await resizeImageToDataUrl(file, 600, 0.75);
+  document.getElementById('music-art-src-input').value = dataUrl;
+  alert('커버 사진이 첨부됐어! 이제 [커버 고정 저장] 버튼을 눌러줘.');
+});
+
+  
 /* 위젯을 묶어두던 틀의 고정을 풀고 z-index만 유지합니다 */
 #widget-area { 
   position: static; 
@@ -413,9 +454,11 @@ body {
         <label>글 제목</label>
         <input type="text" class="admin-box-input" id="form-item-title">
       </div>
+      <!-- 변경 -->
       <div class="admin-field-group">
-        <label>이미지 URL 주소</label>
-        <input type="text" class="admin-box-input" id="form-item-src" placeholder="https://...">
+        <label>이미지 URL 주소 (또는 아래에서 사진 직접 선택)</label>
+        <input type="text" class="admin-box-input" id="form-item-src" placeholder="https://... 또는 사진을 선택하세요">
+        <input type="file" id="form-item-file" accept="image/*" style="margin-top:6px; font-size:11px;">
       </div>
       <div class="admin-field-group">
         <label>본문 내용</label>
@@ -500,11 +543,13 @@ body {
       </div>
       <input type="text" class="todo-input-style" id="music-yt-url-input" style="margin-top:6px; font-size:10px;" placeholder="유튜브 영상 링크 입력 후 Enter">
       
+      <!-- 변경 -->
       <div class="music-admin-art-form" id="music-admin-art-wrapper">
         <input type="text" class="todo-input-style" id="music-art-src-input" style="font-size:9px; height:22px;" placeholder="교체할 앨범 아트 이미지 URL">
+        <input type="file" id="music-art-file" accept="image/*" style="font-size:9px; margin-top:4px;">
         <button class="btn-timer-core btn-timer-start" id="btn-music-art-save" style="height:20px; font-size:9px; margin-top:2px;">커버 고정 저장</button>
       </div>
-    </div>
+
 
     <div class="widget-card">
       <div class="todo-widget-body">
