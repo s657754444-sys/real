@@ -491,6 +491,38 @@ document.getElementById('music-art-file').addEventListener('change', async (e) =
     </div>
   </div>
 
+  <div id="win-admin-profile" class="window" style="width: 280px; height: 320px; left: 320px; top: 150px;">
+  <div class="win-header">
+    <div class="mac-buttons">
+      <button class="mac-btn mac-close" data-winid="win-admin-profile"></button>
+    </div>
+    <div class="win-title-text">프로필 설정</div>
+  </div>
+  <div class="content-body">
+    <div class="admin-field-group">
+      <label>프로필 사진</label>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+        <div style="width:48px; height:48px; border-radius:50%; background:#f0f0f0; overflow:hidden; border:1px solid var(--border-medium);">
+          <img id="profile-edit-preview-img" style="width:100%; height:100%; object-fit:cover; display:none;">
+        </div>
+        <input type="file" id="profile-photo-file" accept="image/*" style="font-size:11px;">
+      </div>
+    </div>
+    <div class="admin-field-group">
+      <label>이름</label>
+      <input type="text" class="admin-box-input" id="form-profile-name">
+    </div>
+    <div class="admin-field-group">
+      <label>상태메시지</label>
+      <input type="text" class="admin-box-input" id="form-profile-msg">
+    </div>
+    <div class="admin-btn-row">
+      <button class="btn-field-del" id="btn-admin-logout">관리자모드 종료</button>
+      <button class="btn-field-save" id="btn-profile-save">저장</button>
+    </div>
+  </div>
+</div>
+
   <div id="widget-area">
     <div class="widget-card" style="padding: 0; overflow: hidden;">
       <div class="dday-display-banner" id="wd-dday-trigger-box">
@@ -561,7 +593,10 @@ document.getElementById('music-art-file').addEventListener('change', async (e) =
 
   <div id="start-menu-window">
     <div class="start-profile-area">
-      <div class="start-profile-img-slot" id="start-profile-avatar-box"></div>
+<!-- 변경 -->
+    <div class="start-profile-img-slot" id="start-profile-avatar-box">
+       <img id="start-profile-avatar-img" style="width:100%; height:100%; object-fit:cover; display:none;">
+    </div>
       <div class="start-profile-info">
         <div class="start-profile-name" id="start-profile-display-name">비초</div>
         <div class="start-profile-msg" id="start-profile-display-msg">V2</div>
@@ -648,7 +683,79 @@ window.connectAdmin = function(pwd) {
   }
 };
 
+const dbRefProfile = db.ref("orange_os/profile");
+
+// 모든 방문자에게 프로필(사진·이름·상태메시지) 표시
+dbRefProfile.on("value", (snapshot) => {
+  const p = snapshot.val() || {};
+  document.getElementById("start-profile-display-name").innerText = p.name || "비초";
+  document.getElementById("start-profile-display-msg").innerText = p.message || "V2";
+  const avatarImg = document.getElementById("start-profile-avatar-img");
+  if (p.photo) {
+    avatarImg.src = p.photo;
+    avatarImg.style.display = "block";
+  } else {
+    avatarImg.style.display = "none";
+  }
+});
+
+function openProfileSettings() {
+  dbRefProfile.once("value", (snapshot) => {
+    const p = snapshot.val() || {};
+    document.getElementById("form-profile-name").value = p.name || "비초";
+    document.getElementById("form-profile-msg").value = p.message || "V2";
+    const previewImg = document.getElementById("profile-edit-preview-img");
+    if (p.photo) {
+      previewImg.src = p.photo;
+      previewImg.style.display = "block";
+    } else {
+      previewImg.style.display = "none";
+    }
+  });
+  document.getElementById("start-menu-window").style.display = "none";
+  openTargetWindow("win-admin-profile");
+}
+
+let pendingProfilePhoto = null;
+document.getElementById("profile-photo-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const dataUrl = await resizeImageToDataUrl(file, 300, 0.8);
+  pendingProfilePhoto = dataUrl;
+  const previewImg = document.getElementById("profile-edit-preview-img");
+  previewImg.src = dataUrl;
+  previewImg.style.display = "block";
+});
+
+document.getElementById("btn-profile-save").addEventListener("click", () => {
+  if (!IS_ADMIN_MODE) return;
+  const data = {
+    name: document.getElementById("form-profile-name").value,
+    message: document.getElementById("form-profile-msg").value
+  };
+  if (pendingProfilePhoto) data.photo = pendingProfilePhoto;
+  dbRefProfile.update(data, (err) => {
+    if (!err) {
+      pendingProfilePhoto = null;
+      alert("프로필이 저장되었습니다.");
+      closeTargetWindow("win-admin-profile");
+    }
+  });
+});
+
+document.getElementById("btn-admin-logout").addEventListener("click", () => {
+  IS_ADMIN_MODE = false;
+  applyAdminUIRender();
+  closeTargetWindow("win-admin-profile");
+  alert("관리자모드가 종료되었습니다.");
+});
+
+// 변경
 document.getElementById("admin-login-indicator").addEventListener("click", () => {
+  if (IS_ADMIN_MODE) {
+    openProfileSettings();
+    return;
+  }
   const p = prompt("관리자 비밀번호를 입력하십시오.");
   if (p) {
     if (connectAdmin(p) === "인증 성공") {
